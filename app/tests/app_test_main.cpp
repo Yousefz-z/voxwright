@@ -16,6 +16,14 @@ int main(int argc, char* argv[]) {
     if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) {
         qputenv("QT_QPA_PLATFORM", "offscreen");
     }
+#if defined(Q_OS_WIN)
+    // On Windows the offscreen platform reads fonts with FreeType from
+    // QT_QPA_FONTDIR, which defaults to a fonts folder inside Qt that the
+    // official binaries do not ship, and warns. Use the system fonts.
+    if (qEnvironmentVariableIsEmpty("QT_QPA_FONTDIR")) {
+        qputenv("QT_QPA_FONTDIR", qEnvironmentVariable("WINDIR").toLocal8Bit() + "\\Fonts");
+    }
+#endif
     QStandardPaths::setTestModeEnabled(true);
     QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
     const QApplication application(argc, argv); // the tray menu is a widget

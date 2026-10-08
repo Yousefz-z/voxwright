@@ -5,6 +5,9 @@
 #include "vox/dsp/one_pole.hpp"
 #include "vox/dsp/smoothed_value.hpp"
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
 #include <span>
 
 namespace vox::dsp {

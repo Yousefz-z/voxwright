@@ -105,6 +105,14 @@ qt_add_qml_module(vox_app_core
         qml/pages/VoicesPage.qml
     RESOURCES
         icons/app.svg)
+# qmlcachegen compiles the QML files to C++. In optimized builds MSVC reports
+# C4702 (unreachable code) inside the Qt headers that those files inline, so
+# the warning is turned off for the qmlcachegen output only.
+if(MSVC)
+    get_target_property(VOX_QMLCACHE_SOURCES vox_app_core SOURCES)
+    list(FILTER VOX_QMLCACHE_SOURCES INCLUDE REGEX "/\\.rcc/qmlcache/")
+    set_source_files_properties(${VOX_QMLCACHE_SOURCES} PROPERTIES COMPILE_OPTIONS /wd4702)
+endif()
 
 qt_add_executable(voxwright WIN32 MACOSX_BUNDLE src/main.cpp)
 target_link_libraries(voxwright PRIVATE vox_app_core vox_app_coreplugin Qt6::QuickControls2 Qt6::Svg)

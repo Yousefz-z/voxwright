@@ -1,6 +1,7 @@
 #include "vox/devices/fake_backend.hpp"
 
 #include <algorithm>
+#include <iterator>
 
 namespace vox::devices {
 

@@ -31,7 +31,9 @@ export QT_ROOT_DIR=~/Qt/6.8.3/gcc_64                           # macOS: ~/Qt/6.8
 
 On Windows use a "x64 Native Tools Command Prompt for VS 2022", `bootstrap-vcpkg.bat`,
 and `aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 ...`, then set
-`VCPKG_ROOT` and `QT_ROOT_DIR` (`...\6.8.3\msvc2022_64`).
+`VCPKG_ROOT` and `QT_ROOT_DIR` (`...\6.8.3\msvc2022_64`). The prompt points
+`VCPKG_ROOT` at the copy of vcpkg inside Visual Studio, so set it again after
+the prompt opens even if it is already set for your account.
 
 The first configure builds the C/C++ dependencies from the pinned overlay ports
 in `ports/`; later configures reuse vcpkg's binary cache. If it stops with

@@ -5,8 +5,11 @@ add_library(vox_compiler_options INTERFACE)
 add_library(vox::compiler_options ALIAS vox_compiler_options)
 
 if(MSVC)
+    # C4324 reports padding added by alignas. The lock-free queues align their
+    # indices to cache lines on purpose, so the padding is the intent.
     target_compile_options(vox_compiler_options INTERFACE
         /W4 /permissive- /utf-8 /Zc:__cplusplus /Zc:preprocessor /EHsc /bigobj
+        /wd4324
         $<$<BOOL:${VOX_WARNINGS_AS_ERRORS}>:/WX>)
     target_compile_definitions(vox_compiler_options INTERFACE
         NOMINMAX WIN32_LEAN_AND_MEAN _USE_MATH_DEFINES _CRT_SECURE_NO_WARNINGS)

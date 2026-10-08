@@ -363,3 +363,18 @@ per run. No Mac is available to test on for now, so pull requests and
 pushes to `main` get Linux and Windows CI, and the macOS jobs (tests,
 disk image, and the driver compile check) run only when the workflow is
 started by hand from the Actions tab.
+
+## D38. Two MSVC warnings are off, each where it is noise
+
+*2026-10-08.* The Windows build uses `/W4 /WX`, the counterpart of the
+Linux warnings with `-Werror`. Two MSVC warnings fire on correct code and
+have no counterpart in the GCC and Clang flags, so they are turned off:
+C4324 (padding added by `alignas`) everywhere, because the lock-free
+queues align their indices to cache lines on purpose, and C4702
+(unreachable code) only for the C++ that qmlcachegen writes from the QML
+files, where it fires inside inlined Qt headers. The project's own sources
+keep C4702. On Windows the UI tests run the offscreen platform with the
+system fonts (`QT_QPA_FONTDIR`), because the official Qt binaries ship
+none. The test that speaks text into the virtual microphone needs the
+flite engine and so still runs on Linux only; text to speech on Windows
+is covered by row T9 of the [manual checklist](manual-test-checklist.md).

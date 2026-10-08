@@ -6,6 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QAction>
+#include <QDir>
 #include <QFile>
 #include <QMenu>
 #include <QSettings>
@@ -94,6 +95,7 @@ TEST_CASE("Start at sign-in writes and removes each system's entry", "[app][syst
         CHECK(strings.contains(program));
         CHECK(strings.contains(QStringLiteral("--minimized")));
         CHECK(runAtLoad);
+        file.close(); // Windows cannot delete a file that is still open
         REQUIRE(autostart->setEnabled(false, program, args));
         CHECK_FALSE(autostart->isEnabled());
     }
@@ -103,8 +105,10 @@ TEST_CASE("Start at sign-in writes and removes each system's entry", "[app][syst
         REQUIRE(autostart->setEnabled(true, program, args));
         CHECK(autostart->isEnabled());
         const QSettings stored(ini, QSettings::IniFormat);
+        // The program path is stored with the platform's separators.
         CHECK(stored.value(QStringLiteral("Voxwright")).toString() ==
-              QStringLiteral("\"/opt/Voxwright App/voxwright\" --minimized"));
+              QLatin1Char('"') + QDir::toNativeSeparators(program) +
+                  QStringLiteral("\" --minimized"));
         REQUIRE(autostart->setEnabled(false, program, args));
         CHECK_FALSE(autostart->isEnabled());
     }
