@@ -33,10 +33,11 @@ struct SoundOptions {
 };
 
 struct MixLevels {
-    float voiceDb = 0.0F;   ///< Processed voice into the virtual microphone and monitor.
-    float soundsDb = -6.0F; ///< Soundboard.
-    float speechDb = -3.0F; ///< Text to speech.
-    float monitorDb = 0.0F; ///< Overall headphone level.
+    float voiceDb = 0.0F;        ///< Processed voice into the virtual microphone and monitor.
+    float soundsDb = -6.0F;      ///< Soundboard.
+    float speechDb = -3.0F;      ///< Text to speech.
+    float monitorDb = 0.0F;      ///< Overall headphone level.
+    bool soundsInMonitor = true; ///< Sounds also play in the headphones.
 };
 
 struct DeviceSelection {

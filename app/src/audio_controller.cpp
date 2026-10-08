@@ -391,6 +391,12 @@ void AudioController::setSoundsLevelDb(double db) {
     emit settingsChanged();
 }
 
+void AudioController::setSoundsInHeadphones(bool on) {
+    settings_.mix.soundsInMonitor = on;
+    check(engine_.setMixLevels(settings_.mix));
+    emit settingsChanged();
+}
+
 void AudioController::setSpeechLevelDb(double db) {
     settings_.mix.speechDb = static_cast<float>(std::clamp(db, -60.0, 12.0));
     check(engine_.setMixLevels(settings_.mix));

@@ -177,6 +177,8 @@ private:
     // Mix.
     bool hearMyself_ = false;
     float hearGain_ = 0.0F;
+    bool soundsInMonitor_ = true;
+    float soundsMonitorGain_ = 1.0F;
     dsp::SmoothedValue voiceLevel_;
     dsp::SmoothedValue soundsLevel_;
     dsp::SmoothedValue speechLevel_;

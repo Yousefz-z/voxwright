@@ -51,6 +51,12 @@ Item {
                     }
                 }
                 Item { Layout.fillWidth: true }
+                PageButton {
+                    objectName: "surpriseMe"
+                    text: qsTr("Surprise me")
+                    iconName: "sparkle"
+                    onClicked: page.voices.selectRandomShown()
+                }
                 SearchField {
                     objectName: "voiceSearch"
                     Layout.preferredWidth: 260

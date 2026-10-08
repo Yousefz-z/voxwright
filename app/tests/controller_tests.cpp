@@ -13,6 +13,30 @@
 using namespace vox::app;
 using namespace vox::app::test;
 
+TEST_CASE("Surprise me picks another voice from those shown", "[app][voices]") {
+    TestApp t;
+    auto* voices = t.context().voices();
+    voices->voices()->setCategory(QStringLiteral("Machine"));
+    REQUIRE(voices->voices()->count() > 1);
+    for (int i = 0; i < 10; ++i) {
+        const QString before = voices->currentVoiceId();
+        voices->selectRandomShown();
+        CHECK(voices->currentVoiceId() != before);
+        CHECK(voices->currentCategory() == QStringLiteral("Machine"));
+    }
+}
+
+TEST_CASE("Sounds can stay out of the headphones and the choice is saved", "[app][voices]") {
+    TestApp t;
+    auto* audio = t.context().audio();
+    CHECK(audio->soundsInHeadphones());
+    audio->setSoundsInHeadphones(false);
+    REQUIRE(t.context().saveNow());
+    QFile file(t.settingsPath());
+    REQUIRE(file.open(QIODevice::ReadOnly));
+    CHECK(file.readAll().contains("\"soundsInMonitor\": false"));
+}
+
 TEST_CASE("First start picks the virtual cable and starts audio", "[app][controller]") {
     TestApp t;
     auto& ctx = t.context();

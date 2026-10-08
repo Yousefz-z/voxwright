@@ -343,3 +343,14 @@ overlapping windows on a worker thread and has a fixed latency, so the
 audio thread never waits for inference and falls back to the plain voice
 when a run is late.
 
+
+## D36. Timing budgets in tests scale in sanitizer builds
+
+*2026-10-08.* Correctness checks are identical in every build, but a
+check against wall-clock time measures the instrumentation as much as the
+code under a sanitizer. The voice chains render at most 0.065 of real time
+in the optimized build, while ThreadSanitizer measured up to 0.33 on a
+loaded machine, past the 0.25 budget. Sanitizer builds therefore define
+`VOX_TESTING_INSTRUMENTED`, and timing checks multiply their budget by
+`vox::testing::kTimingScale` (8 there, 1 elsewhere). The real-time budget
+itself is enforced, unscaled, by the release and clang test runs.

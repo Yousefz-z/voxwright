@@ -253,6 +253,7 @@ void ProcessingGraph::apply(const Command& c) noexcept {
         soundsLevel_.setTarget(dsp::dbToGain(c.y));
         speechLevel_.setTarget(dsp::dbToGain(c.z));
         monitorLevel_.setTarget(dsp::dbToGain(c.w));
+        soundsInMonitor_ = c.a != 0;
         break;
     case Type::TriggerSound:
         sounds_.trigger(c.a, c.options, c.b != 0);
@@ -412,13 +413,16 @@ void ProcessingGraph::processBlock(std::span<const float> input, std::span<float
     // The player updates its duck once per block; ramp across the block.
     const float duckStep = (sounds_.voiceDuck() - duck_) / static_cast<float>(n);
     const float hearTarget = hearMyself_ ? 1.0F : 0.0F;
+    const float soundsMonitorTarget = soundsInMonitor_ ? 1.0F : 0.0F;
     for (std::size_t i = 0; i < n; ++i) {
         duck_ += duckStep;
         const float v = voice[i] * voiceLevel_.next() * duck_;
         const float s = soundsLevel_.next();
         hearGain_ = approach(hearGain_, hearTarget, crossfadeStep_);
+        soundsMonitorGain_ = approach(soundsMonitorGain_, soundsMonitorTarget, crossfadeStep_);
         virtualMic[i] = v + soundsAll[i] * s + speech[i];
-        monitor[i] = (v * hearGain_ + soundsMonitor[i] * s + speech[i]) * monitorLevel_.next();
+        monitor[i] = (v * hearGain_ + soundsMonitor[i] * s * soundsMonitorGain_ + speech[i]) *
+                     monitorLevel_.next();
     }
     micLimiter_.process(virtualMic);
     monitorLimiter_.process(monitor);

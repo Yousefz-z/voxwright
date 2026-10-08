@@ -198,6 +198,19 @@ void VoiceController::selectRandom() {
     static_cast<void>(selectVoice(QString::fromStdString(presets_[pick].id)));
 }
 
+void VoiceController::selectRandomShown() {
+    QStringList candidates;
+    for (int row = 0; row < filter_.rowCount(); ++row) {
+        if (const QString id = filter_.idAt(row); id != settings_.currentVoiceId) {
+            candidates.append(id);
+        }
+    }
+    if (!candidates.isEmpty()) {
+        const auto pick = random_.bounded(static_cast<quint32>(candidates.size()));
+        static_cast<void>(selectVoice(candidates[static_cast<qsizetype>(pick)]));
+    }
+}
+
 void VoiceController::resetCurrentVoice() {
     settings_.voices.remove(settings_.currentVoiceId);
     static_cast<void>(selectVoice(settings_.currentVoiceId));

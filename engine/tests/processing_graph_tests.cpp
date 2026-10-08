@@ -211,6 +211,22 @@ TEST_CASE("Soundboard clips reach both outputs and report when finished", "[engi
     CHECK(events[0].value == 3);
 }
 
+TEST_CASE("Sounds can be kept out of the headphones", "[engine][graph]") {
+    ProcessingGraph g(EngineConfig{});
+    Command mix = command(Command::Type::Mix);
+    mix.y = -6.0F; // the default sound level, as in the test above
+    mix.a = 0;     // not in the monitor
+    REQUIRE(g.send(mix));
+    installClip(g, 3, std::vector<float>(9600, 0.4F));
+    Command trigger = command(Command::Type::TriggerSound, 3);
+    trigger.b = 1;
+    REQUIRE(g.send(trigger));
+    const auto out = runGraph(g, vox::testing::silence(0.2));
+    const std::size_t at = 4800 + limiterLatency(g);
+    CHECK(std::abs(out.mic[at] - 0.4F * 0.501187F) < 1e-3F);
+    CHECK(std::abs(out.monitor[at]) < 1e-4F);
+}
+
 TEST_CASE("Replacing and removing clips frees them on the control thread", "[engine][graph]") {
     ProcessingGraph g(EngineConfig{});
     installClip(g, 1, std::vector<float>(100, 0.1F));

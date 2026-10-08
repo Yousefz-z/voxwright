@@ -218,6 +218,13 @@ Item {
                         formatValue: page.dbLabel
                         onMoved: v => page.audio.voiceLevelDb = v
                     }
+                    SwitchRow {
+                        objectName: "soundsInHeadphones"
+                        label: qsTr("Play sounds in my headphones")
+                        detail: qsTr("Sounds always reach the virtual microphone; this only changes what you hear.")
+                        checked: page.audio.soundsInHeadphones
+                        onToggled: on => page.audio.soundsInHeadphones = on
+                    }
                     LabeledSlider {
                         label: qsTr("Sounds level")
                         from: -40

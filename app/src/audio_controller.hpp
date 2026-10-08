@@ -55,6 +55,10 @@ class AudioController : public QObject {
     Q_PROPERTY(double voiceLevelDb READ voiceLevelDb WRITE setVoiceLevelDb NOTIFY settingsChanged)
     Q_PROPERTY(
         double soundsLevelDb READ soundsLevelDb WRITE setSoundsLevelDb NOTIFY settingsChanged)
+    /// Soundboard sounds also play in the headphones (they always reach the
+    /// virtual microphone).
+    Q_PROPERTY(bool soundsInHeadphones READ soundsInHeadphones WRITE setSoundsInHeadphones NOTIFY
+                   settingsChanged)
     Q_PROPERTY(
         double speechLevelDb READ speechLevelDb WRITE setSpeechLevelDb NOTIFY settingsChanged)
     Q_PROPERTY(
@@ -132,6 +136,8 @@ public:
     void setInputGainDb(double db);
     [[nodiscard]] double voiceLevelDb() const { return static_cast<double>(settings_.mix.voiceDb); }
     void setVoiceLevelDb(double db);
+    [[nodiscard]] bool soundsInHeadphones() const { return settings_.mix.soundsInMonitor; }
+    void setSoundsInHeadphones(bool on);
     [[nodiscard]] double soundsLevelDb() const {
         return static_cast<double>(settings_.mix.soundsDb);
     }

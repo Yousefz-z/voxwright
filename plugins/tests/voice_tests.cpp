@@ -5,6 +5,7 @@
 #include <vox/testing/alloc_trap.hpp>
 #include <vox/testing/analysis.hpp>
 #include <vox/testing/signals.hpp>
+#include <vox/testing/timing.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -69,7 +70,7 @@ TEST_CASE("Every voice renders cleanly within its latency budget", "[plugins][vo
         REQUIRE(m.built);
         CHECK(m.finite);
         CHECK(m.peak < 2.0);
-        CHECK(m.realtimeFactor < 0.25);
+        CHECK(m.realtimeFactor < 0.25 * vox::testing::kTimingScale);
     }
     for (std::size_t i = 0; i < voices().size(); ++i) {
         INFO(voices()[i].id << " latency " << metrics()[i].latencyMs << " ms");

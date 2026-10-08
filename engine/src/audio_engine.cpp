@@ -509,6 +509,7 @@ Status AudioEngine::setMixLevels(const MixLevels& levels) {
     c.y = std::clamp(levels.soundsDb, -60.0F, 12.0F);
     c.z = std::clamp(levels.speechDb, -60.0F, 12.0F);
     c.w = std::clamp(levels.monitorDb, -60.0F, 12.0F);
+    c.a = levels.soundsInMonitor ? 1U : 0U;
     return send(c);
 }
 

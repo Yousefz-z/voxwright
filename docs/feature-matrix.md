@@ -32,7 +32,7 @@ Module names refer to the layout in [architecture.md](architecture.md):
 | Live switching between voices with no dropout | M | Engine builds the new chain off the audio thread, hands it over through a lock-free mailbox, and crossfades old and new chains over 20 ms. |
 | Per-voice quick sliders (pitch, bass, treble, "space"/reverb, background level) | M | Each preset declares 2 to 4 macro sliders that map to one or more block parameters with linear, exponential, or dB curves. Values persist per voice. |
 | Voice changer master on/off | M | Engine bypass with a click-free crossfade; bound to a system hotkey and the tray menu. |
-| Random voice | N | "Surprise me" button and hotkey pick a random voice from the current filter. |
+| Random voice | N | "Surprise me" on the Voices page picks another voice from those shown (search and category applied); the random-voice hotkey picks from all voices. |
 | Voice categories, search, favorites | M | QML list with category chips, text search, favorites filter (see section 11). |
 | Clean voice / "voice enhancer" preset | M | A "Clean" utility voice: high-pass, de-mud EQ, gentle compression, presence boost. |
 | Neural voice conversion voices (vendor markets them as a separate premium line) | N | Experimental, behind the `VOX_ENABLE_ML` build flag ([ml.md](ml.md)): ONNX Runtime 1.23.2, a "Neural Voice" effect that streams through a user-chosen model on a worker thread at a fixed 180 ms latency, and a benchmark. No model ships and none has been tried; CPU cost was measured with a stand-in model. The DSP path never depends on it. |
@@ -63,7 +63,7 @@ Module names refer to the layout in [architecture.md](architecture.md):
 | Play modes: Play/Restart, Play/Stop, Play/Pause, Play/Overlap, hold-to-play loop | M | `engine::SoundboardPlayer` implements all five modes with a voice pool (32 voices), click-free start/stop fades. |
 | Loop toggle | M | Per-sound loop flag with sample-accurate wrap. |
 | Mute other sounds, stop other sounds, mute my voice while this plays | M | Per-sound flags handled in the player: duck other voices, stop them, or duck the processed mic signal. |
-| "Mute for me" (others hear the sound, I do not) | M | Per-sound flag excludes the clip from the monitor bus. Global "sounds in my headphones" switch too. |
+| "Mute for me" (others hear the sound, I do not) | M | Per-sound flag excludes the clip from the monitor bus. A global "Play sounds in my headphones" switch on the Audio page does the same for every sound, with a 20 ms fade. |
 | Stop-all-sounds panic hotkey | M | System hotkey and button. |
 | Slots that hold a voice instead of a sound | N | A tile can reference a voice; triggering it switches voice. |
 | Built-in meme sounds | M | 18 original sounds synthesized from code in `plugins/src/sound_pack.cpp` when the app starts (oscillators, noise, filters, envelopes, a small reverb): stadium horn, applause, ta-da, deflate, rimshot, drum roll, fanfare, laser, boing, whoosh, explosion, glitch, crickets, heartbeat, wrong answer, right answer, alarm, censor bleep. Each is normalized to -18 LUFS with peaks under -1 dBFS. No recordings and no third-party clips ([decisions.md](decisions.md#d24-built-in-sounds-are-rendered-at-startup)). |

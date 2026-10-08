@@ -60,6 +60,9 @@ public:
     Q_INVOKABLE void selectRelative(int delta);
     /// Any voice other than the current one.
     Q_INVOKABLE void selectRandom();
+    /// A voice other than the current one from those the grid shows now
+    /// (search and category applied).
+    Q_INVOKABLE void selectRandomShown();
     Q_INVOKABLE void toggleFavorite(const QString& id);
     Q_INVOKABLE bool isFavorite(const QString& id) const;
 

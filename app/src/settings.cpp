@@ -67,7 +67,8 @@ QJsonObject toJson(const AppSettings& s) {
     const QJsonObject mix{{"voiceDb", static_cast<double>(s.mix.voiceDb)},
                           {"soundsDb", static_cast<double>(s.mix.soundsDb)},
                           {"speechDb", static_cast<double>(s.mix.speechDb)},
-                          {"monitorDb", static_cast<double>(s.mix.monitorDb)}};
+                          {"monitorDb", static_cast<double>(s.mix.monitorDb)},
+                          {"soundsInMonitor", s.mix.soundsInMonitor}};
     QJsonObject hotkeys;
     for (auto it = s.hotkeys.cbegin(); it != s.hotkeys.cend(); ++it) {
         if (!it.value().isEmpty()) {
@@ -125,6 +126,7 @@ AppSettings fromJson(const QJsonObject& root) {
     s.mix.soundsDb = number(mix, "soundsDb", d.mix.soundsDb);
     s.mix.speechDb = number(mix, "speechDb", d.mix.speechDb);
     s.mix.monitorDb = number(mix, "monitorDb", d.mix.monitorDb);
+    s.mix.soundsInMonitor = mix.value("soundsInMonitor").toBool(d.mix.soundsInMonitor);
 
     const QJsonObject transmit = root.value("transmit").toObject();
     const int mode = transmit.value("mode").toInt(0);
