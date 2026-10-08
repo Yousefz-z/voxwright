@@ -400,3 +400,13 @@ on a local socket (Qt Network); a later start connects to it, which shows
 the running window, and ends. A start at sign-in (`--minimized`) while
 Voxwright already runs ends without showing it. A lock left by a process
 that is gone is taken over, so a crash does not block the next start.
+
+## D41. Releases publish the Windows installer from a version tag
+
+*2026-10-08.* Run artifacts need a GitHub sign-in and expire, so they are no
+way for people to download Voxwright. Pushing a tag such as `v0.1.0` now
+publishes the Windows installer as a GitHub release, but only after every
+check on that tag has passed and only when the tag matches the version in
+`CMakeLists.txt`; the README links to the latest release. The macOS disk
+image is not published: it has never been opened on a Mac (D37), and a
+download should be something that has run at least once.

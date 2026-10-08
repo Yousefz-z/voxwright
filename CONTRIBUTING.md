@@ -114,3 +114,16 @@ chmod +x .git/hooks/commit-msg
 
 Fill in the template, link the issue, and include before/after measurements
 for DSP changes (the tools in `tools/bench/` print Markdown tables).
+
+## Releasing
+
+1. Set the new version in the `project()` call in `CMakeLists.txt`
+   (`VERSION x.y.z`) and merge that to `main`.
+2. Tag the merged commit and push the tag:
+   `git tag vx.y.z` then `git push origin vx.y.z`.
+
+CI runs every check on the tag. When they pass, the `release` job publishes
+the Windows installer as a GitHub release with the notes in
+`installer/release-notes.md`, and the README's download link points to it.
+A tag that does not match the version in `CMakeLists.txt` fails the release
+job and publishes nothing.
