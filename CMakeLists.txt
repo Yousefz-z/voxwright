@@ -10,7 +10,7 @@ endif()
 project(Voxwright
     VERSION 0.1.0
     DESCRIPTION "Real-time voice changer and soundboard"
-    HOMEPAGE_URL "https://github.com/Yousefz-z/Test"
+    HOMEPAGE_URL "https://github.com/Yousefz-z/voxwright"
     LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)

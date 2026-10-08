@@ -152,10 +152,21 @@ include(GNUInstallDirs)
 install(TARGETS voxwright
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+# The program and Qt need the Visual C++ runtime. Its DLLs are installed next
+# to Voxwright.exe, a deployment Microsoft supports, because the per-user
+# installer has no administrator rights to run the runtime's own setup
+# program; windeployqt is told not to add that setup program (decision D39).
+set(vox_deploy_options)
+if(MSVC)
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ${CMAKE_INSTALL_BINDIR})
+    include(InstallRequiredSystemLibraries)
+    list(APPEND vox_deploy_options DEPLOY_TOOL_OPTIONS --no-compiler-runtime)
+endif()
 qt_generate_deploy_qml_app_script(
     TARGET voxwright
     OUTPUT_SCRIPT vox_deploy_script
-    NO_UNSUPPORTED_PLATFORM_ERROR)
+    NO_UNSUPPORTED_PLATFORM_ERROR
+    ${vox_deploy_options})
 install(SCRIPT ${vox_deploy_script})
 if(APPLE)
     set(vox_licenses_dir Voxwright.app/Contents/Resources/licenses)

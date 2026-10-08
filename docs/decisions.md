@@ -378,3 +378,14 @@ system fonts (`QT_QPA_FONTDIR`), because the official Qt binaries ship
 none. The test that speaks text into the virtual microphone needs the
 flite engine and so still runs on Linux only; text to speech on Windows
 is covered by row T9 of the [manual checklist](manual-test-checklist.md).
+
+## D39. The Visual C++ runtime is installed next to the program
+
+*2026-10-08.* Voxwright and Qt link the Visual C++ runtime as DLLs. The
+Windows installer runs without administrator rights (D32), so it cannot
+run Microsoft's runtime setup program, which windeployqt would otherwise
+add. `cmake --install` therefore copies the runtime DLLs into the
+program's `bin` folder (CMake's InstallRequiredSystemLibraries), where
+Windows loads them before any system wide copy. The cost is a few
+megabytes per install and no automatic runtime updates through Windows
+Update; a new runtime arrives with the next Voxwright release.
