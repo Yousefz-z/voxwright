@@ -1,0 +1,8 @@
+{
+  "name": "onnxruntime-bin",
+  "version": "1.23.2",
+  "description": "The official prebuilt ONNX Runtime release (CPU execution provider), pinned by SHA-512",
+  "homepage": "https://github.com/microsoft/onnxruntime",
+  "license": "MIT",
+  "supports": "(windows & x64) | osx | (linux & x64)"
+}

@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.25)
 
+# The neural voice track needs ONNX Runtime, the vcpkg manifest feature
+# "ml". Features are read when project() runs the vcpkg toolchain.
+option(VOX_ENABLE_ML "Build the optional neural voice conversion track (needs ONNX Runtime)" OFF)
+if(VOX_ENABLE_ML)
+    list(APPEND VCPKG_MANIFEST_FEATURES "ml")
+endif()
+
 project(Voxwright
     VERSION 0.1.0
     DESCRIPTION "Real-time voice changer and soundboard"
@@ -15,7 +22,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 option(VOX_BUILD_APP "Build the Qt desktop application" ON)
 option(VOX_BUILD_TESTS "Build the automated test suites" ON)
 option(VOX_BUILD_TOOLS "Build internal development tools (benchmarks, sound pack renderer)" ON)
-option(VOX_ENABLE_ML "Build the optional neural voice conversion track (needs ONNX Runtime)" OFF)
 option(VOX_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 set(VOX_SANITIZE "" CACHE STRING "Sanitizers to enable: empty, 'address;undefined', or 'thread'")
 
@@ -37,6 +43,9 @@ add_subdirectory(dsp)
 add_subdirectory(plugins)
 add_subdirectory(devices)
 add_subdirectory(engine)
+if(VOX_ENABLE_ML)
+    add_subdirectory(ml)
+endif()
 
 if(VOX_BUILD_APP)
     # Found once here so every directory shares Qt's targets; Qt's deployment

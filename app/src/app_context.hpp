@@ -5,6 +5,7 @@
 #include "designer_controller.hpp"
 #include "hotkey_controller.hpp"
 #include "hotkeys/global_hotkeys.hpp"
+#include "neural_controller.hpp"
 #include "notification_model.hpp"
 #include "platform/autostart.hpp"
 #include "settings.hpp"
@@ -45,6 +46,7 @@ class AppContext : public QObject {
     Q_PROPERTY(vox::app::TrayController* tray READ tray CONSTANT)
     Q_PROPERTY(vox::app::SpeechController* speech READ speech CONSTANT)
     Q_PROPERTY(vox::app::VirtualMicCheck* micCheck READ micCheck CONSTANT)
+    Q_PROPERTY(vox::app::NeuralController* neural READ neural CONSTANT)
     Q_PROPERTY(vox::app::NotificationModel* notifications READ notifications CONSTANT)
     Q_PROPERTY(QString version READ version CONSTANT)
 
@@ -84,6 +86,10 @@ public:
     [[nodiscard]] TrayController* tray() { return tray_.get(); }
     [[nodiscard]] SpeechController* speech() { return speech_.get(); }
     [[nodiscard]] VirtualMicCheck* micCheck() { return micCheck_.get(); }
+    [[nodiscard]] NeuralController* neural() { return neural_.get(); }
+    /// The effects voices are built from: the built-in ones, plus the
+    /// neural voice in VOX_ENABLE_ML builds.
+    [[nodiscard]] const plugins::EffectRegistry& registry() const { return registry_; }
     [[nodiscard]] GlobalHotkeys& globalHotkeys() { return *globalHotkeys_; }
     [[nodiscard]] NotificationModel* notifications() { return &notifications_; }
     [[nodiscard]] static QString version();
@@ -114,6 +120,8 @@ private:
     NotificationModel notifications_;
     std::unique_ptr<devices::AudioBackend> backend_;
     std::unique_ptr<engine::AudioEngine> engine_;
+    std::unique_ptr<NeuralController> neural_;
+    plugins::EffectRegistry registry_;
     std::vector<plugins::VoicePreset> presets_;
     CustomVoiceStore voiceStore_;
     std::unique_ptr<AudioController> audio_;

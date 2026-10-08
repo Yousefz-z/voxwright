@@ -27,6 +27,12 @@ if(VOX_BUILD_APP)
     vox_target_defaults(vox_render_icon)
 endif()
 
+if(VOX_ENABLE_ML)
+    add_executable(vox_bench_ml bench/ml_bench.cpp)
+    target_link_libraries(vox_bench_ml PRIVATE vox::ml vox::testing)
+    vox_target_defaults(vox_bench_ml)
+endif()
+
 add_executable(vox_bench_engine bench/engine_bench.cpp ${PROJECT_SOURCE_DIR}/engine/tests/drift_simulation.cpp)
 target_include_directories(vox_bench_engine PRIVATE ${PROJECT_SOURCE_DIR}/engine/tests)
 target_link_libraries(vox_bench_engine PRIVATE vox::engine vox::testing)

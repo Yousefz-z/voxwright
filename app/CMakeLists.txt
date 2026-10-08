@@ -22,6 +22,8 @@ qt_add_library(vox_app_core STATIC
     src/hotkeys/global_hotkeys.hpp
     src/hotkeys/hotkey_keys.cpp
     src/hotkeys/hotkey_keys.hpp
+    src/neural_controller.cpp
+    src/neural_controller.hpp
     src/notification_model.cpp
     src/notification_model.hpp
     src/platform/autostart.cpp
@@ -50,6 +52,9 @@ target_link_libraries(vox_app_core PUBLIC
     Qt6::Concurrent Qt6::Core Qt6::Gui Qt6::Multimedia Qt6::Qml Qt6::Quick Qt6::TextToSpeech
     Qt6::Widgets vox::engine vox::plugins vox::devices)
 vox_target_defaults(vox_app_core)
+if(VOX_ENABLE_ML)
+    target_link_libraries(vox_app_core PUBLIC vox::ml)
+endif()
 
 # Global hotkeys: one implementation per platform.
 if(WIN32)
@@ -170,6 +175,7 @@ if(VOX_BUILD_TESTS)
         tests/designer_tests.cpp
         tests/hotkey_tests.cpp
         tests/mic_check_tests.cpp
+        tests/neural_tests.cpp
         tests/model_tests.cpp
         tests/settings_tests.cpp
         tests/soundboard_tests.cpp
@@ -180,6 +186,10 @@ if(VOX_BUILD_TESTS)
         vox_app_core vox_app_coreplugin Qt6::QuickControls2 Qt6::Svg Qt6::Test vox::testing
         Catch2::Catch2)
     vox_target_defaults(vox_app_tests)
+    if(VOX_ENABLE_ML)
+        target_compile_definitions(vox_app_tests PRIVATE
+            VOX_ML_TEST_MODELS="${PROJECT_SOURCE_DIR}/ml/tests/models")
+    endif()
     # The tests run without a display. On Windows the Qt DLLs must be on the
     # path when CTest lists and runs them.
     set(_qt_bin "${QT6_INSTALL_PREFIX}/${QT6_INSTALL_BINS}")

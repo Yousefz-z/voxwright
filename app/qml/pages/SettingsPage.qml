@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls.Basic
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import Voxwright
 
@@ -10,6 +11,7 @@ Item {
     required property AppContext app
     readonly property SystemController system: app.system
     property string error
+    property string neuralError
 
     ScrollView {
         id: scroll
@@ -145,6 +147,50 @@ Item {
             }
 
             Card {
+                objectName: "neuralCard"
+                visible: page.app.neural.available
+                Layout.fillWidth: true
+                Layout.leftMargin: 20
+                Layout.rightMargin: 20
+                title: qsTr("Neural voice (experimental)")
+                subtitle: qsTr("Choose a voice model (.onnx), then add the Neural Voice effect to a voice in the designer. It adds about 180 ms of delay.")
+
+                Text {
+                    Layout.fillWidth: true
+                    text: page.app.neural.loaded ? page.app.neural.modelName + "\n" + page.app.neural.details
+                                                 : qsTr("No model chosen.")
+                    wrapMode: Text.WordWrap
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontBody
+                    color: Theme.textSecondary
+                }
+                RowLayout {
+                    spacing: 10
+                    PageButton {
+                        objectName: "chooseNeuralModel"
+                        text: qsTr("Choose a model")
+                        iconName: "import"
+                        onClicked: modelDialog.open()
+                    }
+                    PageButton {
+                        visible: page.app.neural.loaded
+                        text: qsTr("Remove")
+                        iconName: "trash"
+                        onClicked: page.app.neural.unloadModel()
+                    }
+                }
+                Text {
+                    visible: page.neuralError.length > 0
+                    Layout.fillWidth: true
+                    text: page.neuralError
+                    wrapMode: Text.WordWrap
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontSmall
+                    color: Theme.danger
+                }
+            }
+
+            Card {
                 Layout.fillWidth: true
                 Layout.leftMargin: 20
                 Layout.rightMargin: 20
@@ -182,6 +228,14 @@ Item {
                 }
             }
         }
+    }
+
+    FileDialog {
+        id: modelDialog
+        title: qsTr("Choose a voice model")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [qsTr("ONNX models (*.onnx)")]
+        onAccepted: page.neuralError = page.app.neural.loadModel(selectedFile)
     }
 
     Popup {

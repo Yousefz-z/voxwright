@@ -56,6 +56,9 @@ struct AppSettings {
     bool closeToTray = true;
     bool startMinimized = false;
 
+    // Neural voice (VOX_ENABLE_ML builds).
+    QString neuralModelPath;
+
     // Text to speech.
     QString speechVoice; ///< Name of the system voice; empty for the default.
     bool speechThroughVoice = false;

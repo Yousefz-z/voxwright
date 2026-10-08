@@ -22,3 +22,10 @@ available from https://code.qt.io/ at tag v6.8.3.
 
 Virtual audio cables (VB-CABLE, BlackHole) are not bundled; users install
 them from their official sites.
+
+Builds with `VOX_ENABLE_ML=ON` (not the default installers) also include:
+
+| Component | Use | License |
+|---|---|---|
+| ONNX Runtime 1.23.2 (Microsoft's prebuilt release) | Running neural voice models | MIT; its ThirdPartyNotices.txt is installed with it by vcpkg |
+

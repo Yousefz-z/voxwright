@@ -96,6 +96,14 @@ simulated key presses.
 | T11 | Windows 11 | Check the file properties of Voxwright.exe. | Version 0.1.0, product name and description filled in, the Voxwright icon. | | | |
 | T12 | macOS 13+ | Build `drivers/macos`, install it as in its README, and run Voxwright's virtual microphone check against "Voxwright Virtual Microphone". | Record whether it loads (Audio MIDI Setup), passes the check, and survives a `coreaudiod` restart. Untested so far. | | | |
 
+## Neural voice track (milestone 8, VOX_ENABLE_ML builds only)
+
+| # | Platform | Steps | Expected | Date | Tester | Result |
+|---|---|---|---|---|---|---|
+| N1 | Both | With a converter exported to the format in docs/ml.md, add the Neural Voice effect to a voice and speak. | Record the quality, the processing load, and the late-sample count from `vox_bench_ml` for that model. | | | |
+| N2 | Both | Run `vox_bench_ml` with that model on the slowest supported machine. | Record the real-time factor; the model is usable only if the 95th percentile stays under the 60 ms budget. | | | |
+| N3 | Windows 11 | Build with `VOX_ENABLE_ML=ON` and run the ML tests. | ONNX Runtime loads from the build folder and the tests pass (CI covers Linux only). | | | |
+
 ## Voices (milestone 2)
 
 | # | Platform | Steps | Expected | Date | Tester | Result |

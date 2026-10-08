@@ -1,6 +1,10 @@
 {
   "version": 6,
-  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
   "configurePresets": [
     {
       "name": "base",
@@ -17,8 +21,14 @@
       "name": "linux-base",
       "hidden": true,
       "inherits": "base",
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
-      "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-linux" }
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      }
     },
     {
       "name": "dev",
@@ -75,8 +85,15 @@
       "name": "windows",
       "displayName": "Windows (MSVC)",
       "inherits": "base",
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
-      "architecture": { "value": "x64", "strategy": "external" },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_C_COMPILER": "cl",
@@ -88,7 +105,11 @@
       "name": "macos",
       "displayName": "macOS universal (Apple Clang)",
       "inherits": "base",
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_OSX_ARCHITECTURES": "arm64;x86_64",
@@ -106,29 +127,85 @@
         "VOX_SANITIZE": "address;undefined",
         "VOX_BUILD_TOOLS": "OFF"
       }
+    },
+    {
+      "name": "ml",
+      "displayName": "Linux debug with the neural voice track",
+      "inherits": "dev",
+      "cacheVariables": {
+        "VOX_ENABLE_ML": "ON"
+      }
     }
   ],
   "buildPresets": [
-    { "name": "dev", "configurePreset": "dev" },
-    { "name": "release", "configurePreset": "release" },
-    { "name": "clang", "configurePreset": "clang" },
-    { "name": "asan", "configurePreset": "asan" },
-    { "name": "tsan", "configurePreset": "tsan" },
-    { "name": "windows", "configurePreset": "windows" },
-    { "name": "macos", "configurePreset": "macos" },
-    { "name": "macos-asan", "configurePreset": "macos-asan" }
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "clang",
+      "configurePreset": "clang"
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan"
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan"
+    },
+    {
+      "name": "windows",
+      "configurePreset": "windows"
+    },
+    {
+      "name": "macos",
+      "configurePreset": "macos"
+    },
+    {
+      "name": "macos-asan",
+      "configurePreset": "macos-asan"
+    },
+    {
+      "name": "ml",
+      "configurePreset": "ml"
+    }
   ],
   "testPresets": [
     {
       "name": "test-base",
       "hidden": true,
-      "output": { "outputOnFailure": true },
-      "execution": { "noTestsAction": "error", "stopOnFailure": false, "timeout": 600 },
-      "environment": { "QT_QPA_PLATFORM": "offscreen" }
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false,
+        "timeout": 600
+      },
+      "environment": {
+        "QT_QPA_PLATFORM": "offscreen"
+      }
     },
-    { "name": "dev", "inherits": "test-base", "configurePreset": "dev" },
-    { "name": "release", "inherits": "test-base", "configurePreset": "release" },
-    { "name": "clang", "inherits": "test-base", "configurePreset": "clang" },
+    {
+      "name": "dev",
+      "inherits": "test-base",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "release",
+      "inherits": "test-base",
+      "configurePreset": "release"
+    },
+    {
+      "name": "clang",
+      "inherits": "test-base",
+      "configurePreset": "clang"
+    },
     {
       "name": "asan",
       "inherits": "test-base",
@@ -143,15 +220,32 @@
       "name": "tsan",
       "inherits": "test-base",
       "configurePreset": "tsan",
-      "environment": { "TSAN_OPTIONS": "halt_on_error=1:second_deadlock_stack=1" }
+      "environment": {
+        "TSAN_OPTIONS": "halt_on_error=1:second_deadlock_stack=1"
+      }
     },
-    { "name": "windows", "inherits": "test-base", "configurePreset": "windows" },
-    { "name": "macos", "inherits": "test-base", "configurePreset": "macos" },
+    {
+      "name": "windows",
+      "inherits": "test-base",
+      "configurePreset": "windows"
+    },
+    {
+      "name": "macos",
+      "inherits": "test-base",
+      "configurePreset": "macos"
+    },
     {
       "name": "macos-asan",
       "inherits": "test-base",
       "configurePreset": "macos-asan",
-      "environment": { "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1" }
+      "environment": {
+        "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"
+      }
+    },
+    {
+      "name": "ml",
+      "inherits": "test-base",
+      "configurePreset": "ml"
     }
   ]
 }

@@ -48,6 +48,7 @@ through Catch2 without a UI or audio device.
 | `engine/` | Processing graph, voice chain hot swap, transmit control (mute, push-to-talk, push-to-mute, censor), soundboard player, speech player, mixer buses, output limiters, per-output drift compensation, device loss and recovery, latency breakdown, metering, command and event queues | none |
 | `devices/` | `AudioBackend` interface, miniaudio backend with per-failure error mapping, fake backend (simulated time, injected failures and disconnects), audio file decoding, virtual cable detection | miniaudio (MIT-0) |
 | `app/` | QML UI, view models, global hotkeys, tray, autostart, settings store, text to speech, setup guide with the virtual microphone check | Qt 6.8 (LGPL-3) |
+| `ml/` | Optional (`VOX_ENABLE_ML`): ONNX voice model loader and the streaming "Neural Voice" effect ([ml.md](ml.md)) | ONNX Runtime (MIT), prebuilt |
 | `drivers/` | macOS AudioServerPlugIn loopback driver source; Windows driver design | none |
 | `tools/` | Internal development tools only: benchmarks, sound synthesis for the bundled sound pack, analysis scripts, ML export and benchmark. Not shipped. | none |
 

@@ -45,7 +45,13 @@ AppContext::AppContext(Options options, QObject* parent)
     config.exclusive = settings_.exclusive;
     engine_ = std::make_unique<engine::AudioEngine>(*backend_, config);
 
-    const auto& registry = plugins::EffectRegistry::builtin();
+    // The neural effect must exist before any voice that uses it loads.
+    registry_ = plugins::EffectRegistry::builtin();
+    neural_ = std::make_unique<NeuralController>(settings_, notifications_);
+    neural_->registerEffect(registry_);
+    neural_->initialize();
+    connect(neural_.get(), &NeuralController::settingsChanged, this, &AppContext::scheduleSave);
+    const auto& registry = registry_;
     if (auto voices = plugins::loadBuiltinVoices(registry)) {
         presets_ = std::move(voices).value();
     } else {

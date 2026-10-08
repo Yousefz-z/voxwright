@@ -35,7 +35,7 @@ Module names refer to the layout in [architecture.md](architecture.md):
 | Random voice | N | "Surprise me" button and hotkey pick a random voice from the current filter. |
 | Voice categories, search, favorites | M | QML list with category chips, text search, favorites filter (see section 11). |
 | Clean voice / "voice enhancer" preset | M | A "Clean" utility voice: high-pass, de-mud EQ, gentle compression, presence boost. |
-| Neural voice conversion voices (vendor markets them as a separate premium line) | N | Separate ML milestone behind the `VOX_ENABLE_ML` build flag: ONNX Runtime, RVC-style model, benchmarked on CPU; the DSP path never depends on it. |
+| Neural voice conversion voices (vendor markets them as a separate premium line) | N | Experimental, behind the `VOX_ENABLE_ML` build flag ([ml.md](ml.md)): ONNX Runtime 1.23.2, a "Neural Voice" effect that streams through a user-chosen model on a worker thread at a fixed 180 ms latency, and a benchmark. No model ships and none has been tried; CPU cost was measured with a stand-in model. The DSP path never depends on it. |
 | Daily rotation of free voices, paid tier, voice store purchases | X | Business model features, not product capability. Every voice is available. |
 | Online community voice catalog | X | Replaced by local import/export of `.voxvoice` files (section 2). |
 
@@ -103,7 +103,7 @@ Module names refer to the layout in [architecture.md](architecture.md):
 | Background noise reduction | M | RNNoise (BSD-3, 48 kHz, 10 ms frames) with a strength control that blends the suppressed signal with the equally delayed dry signal. RNNoise runs continuously so it is ready the moment it is switched on; switching crossfades over 20 ms, and when off it adds no latency (its 20 ms apply only while it is on). |
 | Noise gate with threshold slider ("filters the room when you stop talking") | M | `dsp::NoiseGate` with threshold, hysteresis, attack, hold, release, and range; meter shows threshold against input level. |
 | Voice enhancement | N | Optional input stage: high-pass at 80 Hz, gentle compressor, de-esser. |
-| Neural denoiser (DeepFilterNet) | N | Evaluated in the ML track; RNNoise stays default because of its short latency (20 ms) and low CPU. |
+| Neural denoiser (DeepFilterNet) | N | Not done. RNNoise stays the noise reduction because of its short latency (20 ms) and low CPU; a DeepFilterNet model could run through the same ONNX path later. |
 
 ## 8. Mic and output device routing
 

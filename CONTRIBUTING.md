@@ -64,6 +64,16 @@ cmake --preset tsan && cmake --build --preset tsan && ctest --preset tsan
 Windows CI runs `cmake --preset windows`, `cmake --build --preset windows`,
 `ctest --preset windows`. macOS CI runs the `macos` and `macos-asan` presets.
 
+Changes to the optional neural voice track (`ml/`, see
+[docs/ml.md](docs/ml.md)) also need it built and tested with the flag on:
+
+```sh
+cmake --preset ml && cmake --build --preset ml && ctest --preset ml
+```
+
+The test models in `ml/tests/models` are written by
+`tools/ml/make_test_models.py` (needs the `onnx` Python package).
+
 Allocation-tracking tests report as skipped under ThreadSanitizer, whose
 runtime owns `operator new`; they run in every other configuration.
 

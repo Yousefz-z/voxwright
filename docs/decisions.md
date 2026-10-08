@@ -114,6 +114,8 @@ compiled only when Qt is 6.6 or newer; the pinned 6.8.3 satisfies that.
 *2026-10-07.* The ML voice conversion track is built only with the CMake
 option `VOX_ENABLE_ML=ON` (vcpkg feature `ml`). The DSP voices never
 depend on it, and the default build and installers do not include it.
+See [D34](#d34-onnx-runtime-comes-from-microsofts-release-archives) and
+[ml.md](ml.md).
 
 ## D14. Project license
 
@@ -318,4 +320,26 @@ the test suite measures above 0.8 with the chirp 20 dB over noise and
 below 0.3 for noise or speech alone. Silence and "something else arrived"
 get their own messages, because they have different causes (the cable is
 not installed or not selected, or another app plays into it).
+
+## D34. ONNX Runtime comes from Microsoft's release archives
+
+*2026-10-08.* The `ml` feature installs ONNX Runtime 1.23.2 through the
+overlay port `onnxruntime-bin`, which downloads Microsoft's prebuilt CPU
+release for the platform and checks its SHA-512, instead of vcpkg's
+source port. Building ONNX Runtime from source pulls in abseil, protobuf,
+and Eigen and takes over an hour per configuration, for the same library.
+The release archives are what Microsoft documents for applications; the
+pinned hashes keep the build reproducible.
+
+## D35. Neural models are audio in, audio out
+
+*2026-10-08.* Voxwright defines one model format: an ONNX graph from
+`audio` (mono, at its stated rate) to `audio_out`, with an optional
+`pitch_shift` input ([ml.md](ml.md#model-format)). Everything model
+specific (content features, pitch estimation, the synthesizer) stays
+inside the graph, so the app needs no per-architecture code and any
+converter can be packaged for it. The streaming block cuts the voice into
+overlapping windows on a worker thread and has a fixed latency, so the
+audio thread never waits for inference and falls back to the plain voice
+when a run is late.
 

@@ -80,9 +80,11 @@ QJsonObject toJson(const AppSettings& s) {
                           {"closeToTray", s.closeToTray},
                           {"startMinimized", s.startMinimized}};
     const QJsonObject speech{{"voice", s.speechVoice}, {"throughVoice", s.speechThroughVoice}};
+    const QJsonObject neural{{"model", s.neuralModelPath}};
     return {{"version", kFormatVersion},
             {"app", app},
             {"speech", speech},
+            {"neural", neural},
             {"devices", devices},
             {"input", input},
             {"mix", mix},
@@ -141,6 +143,7 @@ AppSettings fromJson(const QJsonObject& root) {
     const QJsonObject speech = root.value("speech").toObject();
     s.speechVoice = speech.value("voice").toString();
     s.speechThroughVoice = speech.value("throughVoice").toBool(d.speechThroughVoice);
+    s.neuralModelPath = root.value("neural").toObject().value("model").toString();
 
     s.currentVoiceId = root.value("currentVoice").toString(d.currentVoiceId);
     for (const auto f : root.value("favorites").toArray()) {

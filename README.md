@@ -18,7 +18,7 @@ Development happens in milestones; each one is a commit.
 | 5 | Soundboard with 18 built-in sounds, import, play modes, and global hotkeys | Done |
 | 6 | Voice designer: effect chain editor with live preview, quick sliders, import and export | Done |
 | 7 | Tray, settings, start at sign-in, setup guide with a virtual microphone check, text to speech, installers built by CI | Done |
-| 8 | Optional neural voice conversion (behind `VOX_ENABLE_ML`) | Planned |
+| 8 | Optional neural voice conversion behind `VOX_ENABLE_ML`: ONNX Runtime, streaming block, benchmark (no model included) | Done |
 
 ![Voxwright voices page](docs/images/screenshots/voices.png)
 
@@ -32,6 +32,7 @@ and has not been verified yet.
 * [Feature matrix](docs/feature-matrix.md): every feature, its priority, and how it is built.
 * [Architecture](docs/architecture.md): layers, threads, signal flow, and the measurements behind each choice.
 * [Voices](docs/voices.md): the voice catalogue, how each voice was measured and tuned, and spectrograms.
+* [Neural voices](docs/ml.md): the experimental ONNX track, its model format, and CPU measurements.
 * [Decisions](docs/decisions.md): scope decisions that must not be undone silently.
 * [Manual test checklist](docs/manual-test-checklist.md): everything that needs real hardware and has not been verified yet.
 * [Contributing](CONTRIBUTING.md): toolchain setup and the exact checks CI runs.

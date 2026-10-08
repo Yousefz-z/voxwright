@@ -10,5 +10,13 @@
     "nlohmann-json",
     "rnnoise",
     "signalsmith-stretch"
-  ]
+  ],
+  "features": {
+    "ml": {
+      "description": "Neural voice conversion with ONNX Runtime (VOX_ENABLE_ML)",
+      "dependencies": [
+        "onnxruntime-bin"
+      ]
+    }
+  }
 }

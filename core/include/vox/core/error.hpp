@@ -46,6 +46,10 @@ enum class ErrorCode {
     HotkeyRegistrationFailed,
     HotkeysUnsupported,
     AutostartFailed,
+    // Neural voice models (VOX_ENABLE_ML).
+    ModelLoadFailed,
+    ModelIncompatible,
+    ModelRunFailed,
     // Programming errors surfaced at API boundaries.
     InvalidArgument,
 };
@@ -125,6 +129,12 @@ inline std::string_view toString(ErrorCode code) noexcept {
         return "HotkeysUnsupported";
     case ErrorCode::AutostartFailed:
         return "AutostartFailed";
+    case ErrorCode::ModelLoadFailed:
+        return "ModelLoadFailed";
+    case ErrorCode::ModelIncompatible:
+        return "ModelIncompatible";
+    case ErrorCode::ModelRunFailed:
+        return "ModelRunFailed";
     case ErrorCode::InvalidArgument:
         return "InvalidArgument";
     }
