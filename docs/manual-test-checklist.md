@@ -2,8 +2,10 @@
 
 Everything here needs real hardware, a real operating system session, or a
 third-party driver, so none of it can be verified in the development
-container or in CI. Nothing on this list has been run yet. Until a row has
-a date, a tester, and a result, treat the feature as **unverified**.
+container or in CI. Until a row has a date, a tester, and a result, treat
+the feature as **unverified**; a partial result verifies only what it names.
+"Scripted" rows were run by driving the app and reading its state on a real
+Windows PC, without anyone listening or speaking.
 
 The automated suites cover the same code paths with a fake audio backend
 and synthetic signals (see [architecture.md](architecture.md#measurements));
@@ -17,7 +19,7 @@ attach logs or measurements to the pull request that records them.
 
 | # | Platform | Steps | Expected | Date | Tester | Result |
 |---|---|---|---|---|---|---|
-| A1 | Windows 11 | Open the device lists with a USB microphone, onboard speakers, headphones, and VB-CABLE installed. | Every device appears once with its Windows name. "CABLE Input" is marked as a virtual cable. | | | |
+| A1 | Windows 11 | Open the device lists with a USB microphone, onboard speakers, headphones, and VB-CABLE installed. | Every device appears once with its Windows name. "CABLE Input" is marked as a virtual cable. | 2026-10-08 | Scripted (Yousef's PC) | Pass. Windows 11 Pro 26200, VB-CABLE 4.5. Microphones ATK Horizon and Arctis Nova 5; outputs Arctis Nova 5, ATK Horizon, two NVIDIA display outputs; each listed once with its Windows name. Both cable inputs marked as virtual cables. Right after the driver install Windows listed the playback side as "Speakers (VB-Audio Virtual Cable)", later as "CABLE Input". No USB unplugging in this row. |
 | A2 | macOS 13+ | Same with the built-in microphone, AirPods, and BlackHole 2ch installed. | Every device appears; "BlackHole 2ch" is marked as a virtual cable. | | | |
 | A3 | macOS | First launch on a clean account. | The system microphone permission prompt appears. Denying it shows the specific "microphone access denied" message with the System Settings path, not a generic error. | | | |
 | A4 | Both | Select microphone, VB-CABLE/BlackHole as virtual mic, and headphones. Enable hear-myself. Speak. | Your voice is heard in the headphones and the input meter moves. | | | |
@@ -44,19 +46,20 @@ attach logs or measurements to the pull request that records them.
 | U3 | Both | Use the app with the keyboard only, then with Narrator (Windows) or VoiceOver (macOS). | Every toggle, slider, voice tile, and picker can be reached and is announced by name and state. | | | |
 | U4 | Both | Change each device picker while speaking. | Audio resumes on the new device within a second, without a crash or stuck sound. | | | |
 | U5 | Both | Run in a virtual machine without GPU acceleration, or over remote desktop. | The window renders (software renderer); voice icons stay inside the scrolling grid. | | | |
-| U6 | Both | Change settings, quit, and start again. Then replace `settings.json` with garbage text and start again. | Settings come back as left. With the damaged file, a "Settings reset" banner appears and `settings.json.damaged` keeps the old content. | | | |
-| U7 | Both | Start with no virtual cable installed; install VB-CABLE or BlackHole while the app runs. | The "No virtual microphone installed" banner links to the official page; after installing, the app picks the cable and says which microphone to choose in chat apps. | | | |
+| U6 | Both | Change settings, quit, and start again. Then replace `settings.json` with garbage text and start again. | Settings come back as left. With the damaged file, a "Settings reset" banner appears and `settings.json.damaged` keeps the old content. | 2026-10-08 | Scripted (Yousef's PC) | Pass. Settings stayed as left across restarts and two upgrades. A garbage settings.json gave the "Settings reset" banner, defaults (the guide opened again), and settings.json.damaged with the old content. |
+| U7 | Both | Start with no virtual cable installed; install VB-CABLE or BlackHole while the app runs. | The "No virtual microphone installed" banner links to the official page; after installing, the app picks the cable and says which microphone to choose in chat apps. | 2026-10-08 | Scripted (Yousef's PC) | Pass after 379beef. The banner linked the official VB-CABLE page; installing VB-CABLE while the app ran changed it to "Virtual microphone ready" without a restart. |
 
 ## Soundboard and hotkeys (milestone 5)
 
 The Windows hook (`app/src/hotkeys/hotkeys_windows.cpp`) and the macOS
 Carbon code (`app/src/hotkeys/hotkeys_macos.cpp`) are compiled by CI on
-those platforms but have never run. Everything above them is tested with
-simulated key presses.
+those platforms. The Windows hook has run only as far as row H1 says; the
+macOS code has never run. Everything above them is tested with simulated
+key presses.
 
 | # | Platform | Steps | Expected | Date | Tester | Result |
 |---|---|---|---|---|---|---|
-| H1 | Both | Assign Ctrl+Alt+V to "Voice changer on or off". Focus another app (a browser, then a full-screen game) and press it. | The voice changer toggles each time; the other app also receives the key. | | | |
+| H1 | Both | Assign Ctrl+Alt+V to "Voice changer on or off". Focus another app (a browser, then a full-screen game) and press it. | The voice changer toggles each time; the other app also receives the key. | 2026-10-08 | Scripted (Yousef's PC) | Partial. Ctrl+Alt+V switched the voice changer off and on again with Notepad focused (keys sent by a script). Not checked: a full-screen game, and whether the focused app also received the key. |
 | H2 | Windows 11 | Repeat H1 in a game that runs as administrator, and in one with anti-cheat (for example a competitive shooter). | Record whether the key works. A low-level hook in a non-elevated app cannot see keys sent to an elevated window; if so, the Hotkeys page should say so (follow-up). | | | |
 | H3 | Both | Push-to-talk with F9 as the talk key. Hold and release it while a chat app listens, with a game focused. | Voice is sent only while held, plus the release delay. Holding the key does not auto-repeat into presses. | | | |
 | H4 | macOS 13+ | Assign hotkeys without granting any Accessibility or Input Monitoring permission. | Hotkeys work; no permission prompt appears. | | | |
@@ -67,7 +70,7 @@ simulated key presses.
 | S2 | Both | Drag WAV, MP3, FLAC, and OGG files from Explorer or Finder onto the soundboard. Then a 60 MB file, an 11-minute file, a renamed text file, and a file on a disconnected network drive. | The four files import and play. Each problem file gets its own message saying what is wrong and what to do; the others still import. | | | |
 | S3 | Both | Set a sound to "Others only" and play it with hear-myself on. | The listener hears it; you do not. | | | |
 | S4 | Both | Hold a "Play while held" sound's hotkey for two seconds while in a game. | It plays while held and stops on release without a click. | | | |
-| S5 | Both | Quit with sounds and boards changed, start again; then corrupt `soundboards.json`. | Boards, sounds, and hotkeys come back. With the damaged file, a banner explains it and the default boards appear. | | | |
+| S5 | Both | Quit with sounds and boards changed, start again; then corrupt `soundboards.json`. | Boards, sounds, and hotkeys come back. With the damaged file, a banner explains it and the default boards appear. | 2026-10-08 | Scripted (Yousef's PC) | Partial. A garbage soundboards.json gave the "Soundboard reset" banner, the built-in sounds, and soundboards.json.damaged with the old content. Boards, sounds, and hotkeys coming back after a restart were not checked. |
 
 ## Voice designer (milestone 6)
 
@@ -83,17 +86,17 @@ simulated key presses.
 
 | # | Platform | Steps | Expected | Date | Tester | Result |
 |---|---|---|---|---|---|---|
-| T1 | Windows 11 | Install with the setup program from CI as a standard user, start it from the Start menu, then uninstall from Settings, Apps. | Installs without administrator rights; the Start menu entry and icon appear; uninstall removes the program and the sign-in entry. SmartScreen warns (unsigned). | | | |
+| T1 | Windows 11 | Install with the setup program from CI as a standard user, start it from the Start menu, then uninstall from Settings, Apps. | Installs without administrator rights; the Start menu entry and icon appear; uninstall removes the program and the sign-in entry. SmartScreen warns (unsigned). | 2026-10-08 | Scripted (Yousef's PC) | Partial. Local build, not the CI artifact, installed silently as a standard (non-administrator) account: no administrator prompt, installed under the user's AppData, Start menu entry created. Upgrading over a running copy closed it and needed no restart. Not checked: the wizard pages, SmartScreen (a local file carries no download mark), uninstall. |
 | T2 | macOS 13+ | Open the disk image, drag Voxwright to Applications, open it with right-click, Open. | It starts; the Dock and the app switcher show the Voxwright icon; Gatekeeper warns once (unsigned). | | | |
-| T3 | Both | First start on a clean account with no virtual cable, then install VB-CABLE or BlackHole and press Check again. | The setup guide opens, links to the official download page, then finds the cable. | | | |
-| T4 | Both | In the setup guide (or Settings), press "Test the virtual microphone" with VB-CABLE or BlackHole installed. Then select another output on the Audio page and test again. | Passes with the cable selected; with another output it reports that nothing arrived. | | | |
+| T3 | Both | First start on a clean account with no virtual cable, then install VB-CABLE or BlackHole and press Check again. | The setup guide opens, links to the official download page, then finds the cable. | 2026-10-08 | Scripted (Yousef's PC) | Pass after 379beef. The guide opened on first start and linked to vb-audio.com/Cable. After VB-CABLE was installed, without a restart, the app found the cable by itself. Before 379beef it told the user to choose the playback side as the microphone. |
+| T4 | Both | In the setup guide (or Settings), press "Test the virtual microphone" with VB-CABLE or BlackHole installed. Then select another output on the Audio page and test again. | Passes with the cable selected; with another output it reports that nothing arrived. | 2026-10-08 | Scripted (Yousef's PC) | Pass with the cable: the test sound arrived on "CABLE Output". With a display output selected the test fails as it should, but says the device is not a recording device and to restart, instead of that the selected output is not a cable (open). |
 | T5 | Windows 11 | The tray icon in the notification area: open the menu, toggle every switch, pick a favorite voice, quit. | The menu matches the window's state and each item works. | | | |
 | T6 | macOS | Same as T5 with the menu bar icon. | Same. | | | |
-| T7 | Both | Close the window with the tray available, then reopen from the tray; turn "Keep running" off and close again. | First close hides the window with a one-time notification; with the option off, closing quits. | | | |
+| T7 | Both | Close the window with the tray available, then reopen from the tray; turn "Keep running" off and close again. | First close hides the window with a one-time notification; with the option off, closing quits. | 2026-10-08 | Scripted (Yousef's PC) | Pass after 0515c46. Closing hid the window and kept audio running; the tray icon brought it back; with the option off, closing quit (before 0515c46 the process kept running without a window). The one-time notification itself was not observed. |
 | T8 | Both | Turn on "Start when you sign in" and "Start hidden in the tray"; sign out and in. Then turn start at sign-in off and sign out and in again. | Voxwright starts hidden in the tray the first time and not at all the second time. On macOS it is listed under Login Items. | | | |
 | T9 | Both | Text to speech with each system voice offered, with "Through my voice effect" off and on, while a second account listens on Discord. | The text is heard clearly in the chosen voice, through the voice effect when switched on. | | | |
 | T10 | Both | Follow each app path on the Settings page in current Discord, Zoom, Teams, and OBS. | Each path leads to the microphone setting; note any app that moved it. | | | |
-| T11 | Windows 11 | Check the file properties of Voxwright.exe. | Version 0.1.0, product name and description filled in, the Voxwright icon. | | | |
+| T11 | Windows 11 | Check the file properties of Voxwright.exe. | Version 0.1.0, product name and description filled in, the Voxwright icon. | 2026-10-08 | Scripted (Yousef's PC) | Partial. File version 0.1.0, product name and description read from the installed file. The icon was not checked. |
 | T12 | macOS 13+ | Build `drivers/macos`, install it as in its README, and run Voxwright's virtual microphone check against "Voxwright Virtual Microphone". | Record whether it loads (Audio MIDI Setup), passes the check, and survives a `coreaudiod` restart. Untested so far. | | | |
 
 ## Neural voice track (milestone 8, VOX_ENABLE_ML builds only)
@@ -102,7 +105,7 @@ simulated key presses.
 |---|---|---|---|---|---|---|
 | N1 | Both | With a converter exported to the format in docs/ml.md, add the Neural Voice effect to a voice and speak. | Record the quality, the processing load, and the late-sample count from `vox_bench_ml` for that model. | | | |
 | N2 | Both | Run `vox_bench_ml` with that model on the slowest supported machine. | Record the real-time factor; the model is usable only if the 95th percentile stays under the 60 ms budget. | | | |
-| N3 | Windows 11 | Build with `VOX_ENABLE_ML=ON` and run the ML tests. | ONNX Runtime loads from the build folder and the tests pass (CI covers Linux only). | | | |
+| N3 | Windows 11 | Build with `VOX_ENABLE_ML=ON` and run the ML tests. | ONNX Runtime loads from the build folder and the tests pass (CI covers Linux only). | 2026-10-08 | Scripted (Yousef's PC) | Pass. MSVC 19.44 with VOX_ENABLE_ML=ON: 230 tests passed, 1 skipped (needs the flite engine). ONNX Runtime 1.23.2 from the build folder; the 1.17 copy in System32 cannot provide the 1.23 API the tests use. |
 
 ## Voices (milestone 2)
 
