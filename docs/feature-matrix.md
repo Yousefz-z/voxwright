@@ -49,7 +49,7 @@ Module names refer to the layout in [architecture.md](architecture.md):
 | Name, image, and save a custom voice; edit it later | M | Saved as JSON in the user data folder with name, category, accent color, and glyph icon. Built-in voices can be duplicated into editable copies. |
 | Share custom voices | N | Export and import `.voxvoice` files (JSON). No online hub. |
 | Expose chosen parameters as quick sliders on the voice card | N | Designer lets the user mark up to 4 parameters as macros. |
-| 140+ separate effect modules | X | Count is not a goal. Voxwright ships about 25 general, well-tuned blocks whose parameters span the same space. |
+| 140+ separate effect modules | X | Count is not a goal. Voxwright ships 21 general, well-tuned blocks whose parameters span the same space. |
 
 ## 3. Soundboard
 
@@ -84,14 +84,14 @@ Module names refer to the layout in [architecture.md](architecture.md):
 |---|---|---|
 | Hear-myself toggle (processed voice to headphones) | M | Monitor bus to the selected output device; toggle in the bottom bar, tray, and hotkey. |
 | Monitor volume and per-channel mixer (voice, soundboard, hear-myself levels) | M | "Mixer" settings page with voice, soundboard, monitor, TTS, and background faders. |
-| Automatic feedback detection that turns hear-myself off | N | `dsp::FeedbackDetector` watches for sustained narrow-band peaks with rising level (howl) and for high correlation between monitor output and mic input; when triggered the engine mutes the monitor and the UI explains why. Can be disabled in Advanced settings. |
+| Automatic feedback detection that turns hear-myself off | N | While hear-myself is on, `dsp::FeedbackDetector` watches the microphone for a loud, narrow spectral peak that holds its frequency longer than speech does (howl). The engine then fades the monitor out, turns hear-myself off, and reports the frequency so the UI can explain why (test: a 2.5 kHz howl is caught and reported within 30 Hz). Can be disabled in Advanced settings. |
 
 ## 6. Push-to-talk and push-to-mute
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
 | Mute microphone toggle | M | Engine mute with fade; hotkey, tray, bottom bar. |
-| Push-to-talk (hold key to transmit) | M | `engine::TransmitControl` modes: always on, push-to-talk, push-to-mute, toggle. Global hotkey with key-down and key-up events. 10 ms fade in, configurable release delay (default 150 ms) so word endings are not cut. |
+| Push-to-talk (hold key to transmit) | M | `engine::TransmitControl` modes: always on, push-to-talk, push-to-mute; mute is a separate toggle on top. Global hotkey with key-down and key-up events. 10 ms fade in, 20 ms fade out, configurable release delay (default 150 ms) after a key release so word endings are not cut. |
 | Push-to-mute (hold key to silence) | M | Same component, inverted. |
 | Soundboard still audible during push-to-talk | M | Transmit control gates the voice path only; soundboard and TTS are mixed after it. |
 | Censor beep (hold a key, voice replaced by a beep) | N | Hold hotkey crossfades the voice path to a 1 kHz tone. |
@@ -100,10 +100,10 @@ Module names refer to the layout in [architecture.md](architecture.md):
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
-| Background noise reduction | M | RNNoise (BSD-3, 48 kHz, 10 ms frames) with a strength control that blends the suppressed and dry signal and applies a gain floor. |
+| Background noise reduction | M | RNNoise (BSD-3, 48 kHz, 10 ms frames) with a strength control that blends the suppressed signal with the equally delayed dry signal. RNNoise runs continuously so it is ready the moment it is switched on; switching crossfades over 20 ms, and when off it adds no latency (its 20 ms apply only while it is on). |
 | Noise gate with threshold slider ("filters the room when you stop talking") | M | `dsp::NoiseGate` with threshold, hysteresis, attack, hold, release, and range; meter shows threshold against input level. |
 | Voice enhancement | N | Optional input stage: high-pass at 80 Hz, gentle compressor, de-esser. |
-| Neural denoiser (DeepFilterNet) | N | Evaluated in the ML track; RNNoise stays default because of its 10 ms frame latency and low CPU. |
+| Neural denoiser (DeepFilterNet) | N | Evaluated in the ML track; RNNoise stays default because of its short latency (20 ms) and low CPU. |
 
 ## 8. Mic and output device routing
 
@@ -111,10 +111,10 @@ Module names refer to the layout in [architecture.md](architecture.md):
 |---|---|---|
 | Choose input device (real microphone) and output device (headphones) | M | Device pickers fed by miniaudio enumeration (WASAPI on Windows, CoreAudio on macOS). |
 | Choose the virtual-mic output (cable/driver) | M | Third picker, auto-selects a detected virtual cable. |
-| Hot-plug handling and "disconnected device" error | M | Device change notifications trigger re-enumeration; a removed device produces a specific banner ("Microphone X was disconnected. Pick another input or reconnect it.") and the engine keeps running on silence. |
+| Hot-plug handling and "disconnected device" error | M | Device notifications are queued to the control thread. A lost device produces a `DeviceLost` event naming the device and its role (for the banner: "Microphone X was disconnected. Pick another input or reconnect it."); the engine keeps running on the remaining devices (without a microphone, the virtual-mic output drives processing so sounds and speech still play) and reopens the device when it reappears (`DeviceRestored`). |
 | "Device used by another application in exclusive mode" error | M | Mapped from the backend's error code to a specific message with the Windows setting that fixes it. |
 | Exclusive mode option (Windows) | M | WASAPI exclusive toggle in Advanced settings; shared mode is the default. |
-| Internal 48 kHz processing, any device rate accepted | M | Engine runs at 48 kHz; device streams at other rates go through streaming libsamplerate converters. Clock drift between capture and playback devices is absorbed by an adaptive resampling ratio driven by ring-buffer fill level. |
+| Internal 48 kHz processing, any device rate accepted | M | Engine runs at 48 kHz; devices open at their native rate (8 to 384 kHz) and go through streaming libsamplerate converters. Clock drift between capture and playback devices is absorbed by a PI controller that trims each output's conversion ratio from its buffer fill (simulated: +-300 ppm at 44.1, 48, and 96 kHz with 1.5 ms scheduling jitter, no dropouts in 90 s, 97 dB tone-to-noise). |
 | Buffer size / latency setting | M | Advanced setting with a latency readout computed from the actual device periods. |
 | Anti-popping | M | Always on: every start, stop, mute, and switch is a fade. |
 | First-run audio wizard | M | First-run flow (section 13). |

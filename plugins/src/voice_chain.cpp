@@ -50,7 +50,24 @@ Result<std::unique_ptr<VoiceChain>> VoiceChain::build(const VoicePreset& preset,
     chain->tone_.setGainDb(dsp::Equalizer::HighShelf, settings.trebleDb);
     chain->outputGain_.prepare(context.sampleRate, 30.0F);
     chain->outputGain_.setImmediate(dsp::dbToGain(preset.outputGainDb));
+    chain->settle(context);
     return chain;
+}
+
+void VoiceChain::settle(const PrepareContext& context) {
+    // Effects ramp parameter changes (30 to 50 ms) and treat the preset's
+    // values as changes from their defaults. Running silence through the
+    // chain lets every ramp finish; reset() then clears the signal state but
+    // not the parameters, so the voice starts exactly as designed instead of
+    // sweeping in from the defaults.
+    constexpr double kSettleSeconds = 0.06;
+    std::vector<float> silence(maxBlock_, 0.0F);
+    const auto total = static_cast<std::size_t>(kSettleSeconds * context.sampleRate);
+    for (std::size_t done = 0; done < total; done += maxBlock_) {
+        std::fill(silence.begin(), silence.end(), 0.0F);
+        process(std::span<float>(silence).first(std::min(maxBlock_, total - done)));
+    }
+    reset();
 }
 
 void VoiceChain::reset() noexcept {

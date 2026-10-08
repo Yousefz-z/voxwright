@@ -18,3 +18,8 @@ add_executable(vox_voice_report bench/voice_report.cpp ${PROJECT_SOURCE_DIR}/plu
 target_include_directories(vox_voice_report PRIVATE ${PROJECT_SOURCE_DIR}/plugins/tests)
 target_link_libraries(vox_voice_report PRIVATE vox::plugins vox::testing)
 vox_target_defaults(vox_voice_report)
+
+add_executable(vox_bench_engine bench/engine_bench.cpp ${PROJECT_SOURCE_DIR}/engine/tests/drift_simulation.cpp)
+target_include_directories(vox_bench_engine PRIVATE ${PROJECT_SOURCE_DIR}/engine/tests)
+target_link_libraries(vox_bench_engine PRIVATE vox::engine vox::testing)
+vox_target_defaults(vox_bench_engine)

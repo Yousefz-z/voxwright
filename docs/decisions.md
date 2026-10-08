@@ -143,3 +143,46 @@ committed. Listening checks on real voices are part of
 Butterworth. Twelve dB per octave left audible energy outside the band of
 the device voices after clipping and rate reduction (found on the
 spectrogram sheet).
+
+## D18. The microphone's clock drives processing
+
+*2026-10-08.* While a microphone is open, its capture callback runs the
+whole graph and every output reads from a drift-compensated ring buffer
+("push mode"). The alternative, driving from the virtual microphone's
+callback and buffering the input, adds the same buffering on the input
+side and gives the microphone no say in timing; push mode keeps the
+voice path to one ring buffer per output. Without a microphone the
+virtual-mic output's callback drives instead ("pull mode"), so the
+soundboard and speech never depend on a microphone being present.
+
+## D19. Drift control measures a continuous fill, in two speeds
+
+*2026-10-08.* Each output's ring buffer is held at a 2 ms target by a PI
+controller on the fill the buffer would have if the device read
+continuously, measured once per producer callback. Holding the raw fill
+instead made the controller chase the beat between the two callback
+rates (+-1800 ppm ratio swings, 5 dB tone-to-noise in simulation). One
+fixed loop speed could not both acquire a 300 ppm clock difference within
+the 2 ms margin and keep scheduling jitter out of the ratio, so the loop
+acquires fast for 20 s after a start or refill and then tracks slowly.
+Measured: no dropouts at +-300 ppm with 1.5 ms jitter and 97 dB
+tone-to-noise ([architecture.md](architecture.md#engine-measurements)).
+
+## D20. Noise suppression costs no latency while off
+
+*2026-10-08.* RNNoise adds 20 ms (two 10 ms frames: one to collect, one
+inside its overlap-add). It runs all the time so its
+state is current, but while off the graph uses the undelayed input and
+crossfades to the suppressed signal only when it is switched on. The
+latency readout includes the 20 ms only while it is on. Until milestone
+3 the wrapper reported 10 ms and delayed its dry signal by only one
+frame, so partial strengths blended two copies 10 ms apart; the engine
+latency measurement exposed it, and a test now pins both paths to the
+same 20 ms.
+
+## D21. Voice switches crossfade linearly
+
+*2026-10-08.* Old and new voices are both derived from the same
+microphone and are strongly correlated, so the 20 ms switch uses a
+constant-gain (linear) crossfade. An equal-power crossfade measured a
++3 dB swell halfway through (0.57 peak for a 0.4 input).

@@ -118,6 +118,31 @@ TEST_CASE("Noise suppressor removes stationary noise and keeps speech", "[dsp][r
     CHECK(speechChange > -6.0);
 }
 
+TEST_CASE("Noise suppressor latency is the reported two frames at every strength", "[dsp][noise]") {
+    const auto phrase = vt::synthPhrase(120.0).audio;
+    const std::size_t lat = vox::dsp::NoiseSuppressor::latencySamples();
+    REQUIRE(lat == 960);
+    // Strength 0: exactly the input, delayed.
+    vox::dsp::NoiseSuppressor dry;
+    dry.setStrength(0.0F);
+    dry.prepare(kFs);
+    const auto bypassed = vt::renderOffline(dry, phrase, 128);
+    for (std::size_t i = lat; i < phrase.size(); i += 101) {
+        REQUIRE(bypassed[i] == phrase[i - lat]);
+    }
+    // Strength 1: RNNoise's own output lines up with the same delay, so a
+    // partial strength blends aligned signals instead of comb filtering.
+    // (One sample of slack: RNNoise high-passes its input, and the phase
+    // lead at this phrase's low pitch reads as 959 here.)
+    vox::dsp::NoiseSuppressor wet;
+    wet.setStrength(1.0F);
+    wet.prepare(kFs);
+    const auto suppressed = vt::renderOffline(wet, phrase, 128);
+    const std::size_t lag = vt::estimateLag(phrase, suppressed, 3000);
+    CHECK(lag + 1 >= lat);
+    CHECK(lag <= lat + 1);
+}
+
 TEST_CASE("Level meter reads peak and RMS of a sine", "[dsp][meter]") {
     vox::dsp::LevelMeter m;
     m.prepare(kFs);

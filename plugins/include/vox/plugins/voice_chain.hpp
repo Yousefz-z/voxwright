@@ -51,6 +51,7 @@ public:
 
 private:
     VoiceChain() = default;
+    void settle(const PrepareContext& context);
 
     struct Block {
         std::unique_ptr<EffectNode> node;

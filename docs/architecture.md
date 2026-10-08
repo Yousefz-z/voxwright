@@ -42,11 +42,11 @@ through Catch2 without a UI or audio device.
 
 | Module | Contents | Third-party code |
 |---|---|---|
-| `core/` | `Result<T>`, typed `Error` with actionable messages, SPSC queue, SPSC ring buffer, triple buffer | none |
-| `dsp/` | Biquad/SVF filters, delay lines, LFOs, envelope followers, pitch tracker, PSOLA pitch shifter, spectral shifter, vocoder, FDN reverb, dynamics, distortion, modulation effects, ambience synthesis, loudness meter, RNNoise wrapper, offline render helper used by tests | Signalsmith Stretch (MIT), RNNoise (BSD-3) |
+| `core/` | `Result<T>`, typed `Error` with actionable messages, SPSC queue, SPSC ring buffer, object channel (hands heap objects to the audio thread and back) | none |
+| `dsp/` | Biquad/SVF filters, delay lines, LFOs, envelope followers, pitch tracker, PSOLA pitch shifter, spectral shifter, vocoder, FDN reverb, dynamics, distortion, modulation effects, ambience synthesis, loudness meter, feedback detector, RNNoise wrapper, streaming and one-shot resamplers | Signalsmith Stretch (MIT), RNNoise (BSD-3), libsamplerate (BSD-2) |
 | `plugins/` | Effect descriptors (parameter metadata), factory registry, node wrappers, preset and macro model, JSON preset parser, 54 voice presets | nlohmann/json (MIT) |
-| `engine/` | Audio graph, voice chain hot swap, transmit control (mute, push-to-talk, push-to-mute, censor), soundboard player, mixer buses, output limiter, drift compensation, metering, command and event queues | libsamplerate (BSD-2) |
-| `devices/` | `AudioBackend` interface, miniaudio backend, fake backend, audio file decoding, virtual cable detection, loopback test | miniaudio (MIT-0) |
+| `engine/` | Processing graph, voice chain hot swap, transmit control (mute, push-to-talk, push-to-mute, censor), soundboard player, speech player, mixer buses, output limiters, per-output drift compensation, device loss and recovery, latency breakdown, metering, command and event queues | none |
+| `devices/` | `AudioBackend` interface, miniaudio backend with per-failure error mapping, fake backend (simulated time, injected failures and disconnects), audio file decoding, virtual cable detection; loopback test in milestone 7 | miniaudio (MIT-0) |
 | `app/` | QML UI, view models, global hotkeys, tray, autostart, settings store, text-to-speech capture, first-run flow | Qt 6.8 (LGPL-3) |
 | `drivers/` | macOS AudioServerPlugIn loopback driver source; Windows driver design | none |
 | `tools/` | Internal development tools only: benchmarks, sound synthesis for the bundled sound pack, analysis scripts, ML export and benchmark. Not shipped. | none |
@@ -57,42 +57,92 @@ All processing runs at 48 kHz, 32-bit float, mono for the voice path.
 Output devices receive the mono mix on every channel.
 
 ```
-mic device --(rate convert)--> input gain --> noise suppression --> gate
-     --> transmit control (mute / PTT / PTM / censor)
-     --> voice chain (active preset, crossfaded on switch, bypassable)
-     --> + ambience (global background toggle)
-     |
-     +--> voice bus ----------------+-----------------------------+
-                                    |                             |
-soundboard player --> sound bus ----+                             |
-tts player --------> tts bus -------+                             |
-                                    v                             v
-                         virtual mic mix               monitor mix (hear myself)
-                         --> limiter                   (voice only if enabled,
-                         --> (rate convert)             sounds unless "mute for me")
-                         --> virtual cable device       --> limiter --> headphones
+mic (any rate, any channels)
+  --> average to mono --> rate convert to 48 kHz (only if needed)
+  --> input gain --> DC blocker
+  --> noise suppression (RNNoise; crossfaded, no latency while off)
+  --> noise gate (optional)
+  --> feedback detector (watches for howl while hear-myself is on)
+  --> transmit control (mute, push-to-talk, push-to-mute, censor beep)
+  --> + speech routed "through my voice"
+  --> voice chain (preset blocks, tone, background ambience;
+                   20 ms crossfade on switch, crossfade to dry when off)
+  --> voice level x voice duck (a sound with "mute my voice" playing)
+        |
+        +--------------------+------------------------------+
+                             |                              |
+soundboard player ---- all sounds ---+       sounds except "mute for me"
+speech player ------ speech (direct) +                      |
+                             v                              v
+                    virtual mic mix            monitor mix: voice x hear-myself
+                    --> limiter (-1 dBFS)      + sounds + speech, x monitor level
+                    --> output stage           --> limiter (-1 dBFS)
+                        (resample, drift trim) --> output stage
+                    --> virtual cable          --> headphones
 ```
+
+Speech and sounds are mixed after transmit control, so push-to-talk and
+mute silence the microphone but not the soundboard.
 
 ## Threads
 
 | Thread | Work | Rules |
 |---|---|---|
-| Capture callback (device) | Pull mic frames, run the whole graph, push results into one ring buffer per output device | No locks, no allocation, no system calls other than the device API returning. Verified by an allocation trap in tests. |
-| Playback callbacks (one per output device) | Pop from the ring buffer through the drift compensator | Same rules. |
-| Control thread (Qt main thread) | UI, building voice chains, decoding sounds, settings | Never touches audio state directly; sends commands. |
+| Capture callback (device) | **Push mode**, whenever a microphone is open: downmix and convert the input, run the processing graph, write each output's ring buffer through its output stage. | No locks, no allocation, no system calls beyond reading the clock. Checked by an allocation trap around the capture callback path and around the graph with every feature active. |
+| Playback callbacks (one per output) | Read the ring buffer. **Pull mode**, when no microphone is open (none selected, or it was unplugged): the virtual mic's callback (or the headphones', if there is no virtual mic) runs the graph itself before reading, so sounds and speech keep playing. | Same rules. |
+| Control thread (Qt main thread) | UI, building voice chains, decoding sounds, settings, `AudioEngine::poll()` at 30 Hz for events, garbage, and device changes | Never touches audio state directly; sends commands. |
+| Device notification thread (OS) | Device added, removed, stopped, or rerouted | Only queues the event under a mutex; the control thread acts on it in `poll()`. |
 | Hotkey thread (Windows) | Low-level keyboard hook message loop | Posts events to the control thread and writes push-to-talk state straight into an atomic so it does not wait for the UI. |
+
+Only one thread runs the graph at a time: the mode is fixed while streams
+run, and every stream is stopped before the engine switches modes or
+reopens devices.
 
 Communication between control and audio threads uses three primitives
 from `core/`:
 
-* **Command queue** (SPSC, fixed capacity): parameter changes, toggles,
-  sound triggers. Drained at the start of every audio block.
-* **Mailbox** for large objects (a newly built voice chain, a decoded
-  clip): ownership passes by pointer through the queue; the audio thread
-  hands retired objects back through a second queue so they are destroyed
-  on the control thread, never on the audio thread.
-* **Event queue** (SPSC, audio to control): meters, xrun counts,
-  feedback detection, clip finished.
+* **Command queue** (SPSC, 1024 entries): parameter changes, toggles,
+  sound triggers. Drained at the start of every audio block, after new
+  objects are adopted, so a sound loaded and then triggered plays. While
+  no stream runs, the control thread applies commands itself, so settings
+  made while stopped are kept and the queue never fills.
+* **Object channel** for large objects (a newly built voice chain, a
+  decoded clip, synthesized speech): ownership passes by pointer through
+  one queue; the audio thread returns retired objects (a replaced chain,
+  the clip a new one replaced) through a second queue, so they are
+  destroyed on the control thread, never on the audio thread.
+* **Event queue** (SPSC, audio to control): sound finished, speech
+  finished, feedback detected. Meters are relaxed atomics.
+
+### Output stages and clock drift
+
+Each output device runs on its own crystal, which differs from the
+microphone's by tens to a few hundred parts per million. Each output
+therefore has an output stage: a libsamplerate converter (90 % bandwidth
+setting) into a ring buffer, whose ratio a PI controller trims by up to
++-0.5 %.
+
+* The controller measures the fill the buffer would have if the device
+  read continuously (ring fill minus the frames the device has played
+  since its last read, from the backend's clock) once per producer
+  callback, just before it writes. That quantity does not jump when a
+  device read moves past a producer write, so the controller does not
+  chase the beat between the two callback rates.
+* Target: 2 ms at that point, which covers scheduling jitter. Because the
+  measurement already accounts for the next device read, no further
+  period of buffering is needed.
+* For 20 s after a start or a refill the loop runs fast (0.4 rad/s) to
+  find the clock difference; then it tracks slowly (0.1 rad/s) with the
+  error and the trim both smoothed, so jitter does not reach the ratio as
+  phase noise. Per-block random ratio noise of +-37 ppm measured 72 dB
+  tone-to-noise; the tracking loop holds the ratio within about 10 to
+  20 ppm and the output at 97 dB, the converter's own floor at a
+  non-unity ratio.
+* At start and after an underrun the stage plays silence until it holds
+  the target plus one device period plus the producer's last burst, then
+  resumes; the first reads cannot run dry.
+* In pull mode the driving output renders inside its own callback, so it
+  has no drift and no refill margin ("synchronous").
 
 ## Pitch and formant shifting
 
@@ -140,19 +190,20 @@ Rejected alternatives:
 
 ## Noise suppression
 
-RNNoise v0.1.1: 48 kHz native, 10 ms frames (480 samples of latency), a
+RNNoise v0.1.1: 48 kHz native, 10 ms frames (20 ms of latency: one frame to
+collect, one inside RNNoise's overlap-add; measured, see below), a
 recurrent model small enough for any CPU. Suppression of stationary noise
 after one second of adaptation (`vox_bench_noise`, see
 [Reproducing the numbers](#reproducing-the-numbers)):
 
 | Noise | Input level (dBFS) | Reduction after 1 s (dB) |
 |---|---|---|
-| White | -58.7 | -30.3 |
+| White | -58.7 | -30.5 |
 | White | -38.7 | -1.6 |
 | White | -24.8 | -6.0 |
-| Pink | -53.5 | -34.2 |
-| Pink | -33.5 | -38.3 |
-| Pink | -19.5 | -16.8 |
+| Pink | -53.5 | -34.3 |
+| Pink | -33.5 | -38.4 |
+| Pink | -19.5 | -16.6 |
 | Brown | -57.5 | -43.7 |
 | Brown | -37.5 | -39.4 |
 | Brown | -23.5 | -48.4 |
@@ -162,7 +213,7 @@ level tested and 30 dB of quiet white noise, but leaves loud full-band white
 noise mostly in place (2 to 6 dB). Real microphone noise is pink or brown (fans, traffic, hum), and the
 noise gate covers the remaining hiss between words. The unit test
 `Noise suppressor removes stationary noise and keeps speech` checks a
-phrase in pink noise at about 10 dB SNR: 16.9 dB less noise in pauses, and
+phrase in pink noise at about 10 dB SNR: 16.7 dB less noise in pauses, and
 the vowel level changes by less than 0.1 dB.
 
 DeepFilterNet gives better suppression of non-stationary noise but needs a
@@ -190,15 +241,21 @@ linear resampler.
 
 ### Latency budget
 
-Round trip = capture period + ring buffer target + playback period +
-device and driver buffering + algorithmic latency of the active voice.
-With a 128-frame period at 48 kHz (2.67 ms) the engine contributes
-5.3 ms plus 1 period of safety in the ring buffer: 8 ms. Windows shared
-mode adds the audio engine's period (typically 10 ms, lower with
-`IAudioClient3` on drivers that support it); exclusive mode removes it.
-The measured engine-side figures are in
-[Engine measurements](#engine-measurements); the device-side part must
-be measured on real hardware ([manual-test-checklist.md](manual-test-checklist.md)).
+Microphone to virtual microphone, engine side: one capture period +
+input conversion (only if the microphone is not at 48 kHz, about 1 ms) +
+noise suppression (20 ms, only while on) + the voice's algorithmic
+latency (0 for filter and effect voices, 30.2 ms for pitch-shifted voices
+at the default 75 Hz lowest pitch) + limiter look-ahead (1.5 ms) + ring
+buffer target (2 ms) + output conversion (about 1 ms) + one playback
+period. `AudioEngine::stats()` reports each term from the devices'
+actual periods and rates; that is the latency readout in the UI.
+
+On top of that come buffers the engine cannot see: the Windows audio
+engine's period in shared mode (typically 10 ms; exclusive mode removes
+it) and driver and converter buffering. Measured engine-side numbers are
+in [Engine measurements](#engine-measurements); the full round trip must
+be measured on real hardware
+([manual-test-checklist.md](manual-test-checklist.md), item A6).
 
 ## Virtual microphone
 
@@ -341,7 +398,96 @@ How to read it:
 
 ### Engine measurements
 
-Filled in by milestone 3.
+Produced by `vox_bench_engine` (RelWithDebInfo, GCC 13, `-O2`) and
+checked by the engine test suite.
+
+**Processing cost** of the whole graph (input conditioning, voice,
+soundboard, mixing, both limiters) per 128-frame block, on the synthetic
+phrase:
+
+| Configuration | Mean (% of block) | 99th percentile (% of block) | Worst (% of block) |
+|---|---|---|---|
+| No voice | 2.1 | 9.0 | 39.7 |
+| No voice, noise reduction on | 2.1 | 9.1 | 59.3 |
+| Clean Voice | 2.3 | 9.3 | 22.4 |
+| Deep Baritone (PSOLA) | 4.2 | 13.4 | 28.7 |
+| Choir Bot (vocoder + harmonizer) | 3.5 | 11.2 | 20.2 |
+| Cathedral (reverb) | 3.0 | 13.6 | 20.8 |
+
+RNNoise runs on every block (so it is ready when switched on) but
+processes a whole 10 ms frame in one of every 3.75 blocks, which sets the
+99th percentile. The worst single blocks include preemption by other work
+on the shared 4-vCPU virtual machine (the graph without a voice shows the
+largest spikes); the 99th percentile is the meaningful figure. Checklist
+item A14 measures the load on a slow real machine.
+
+**Latency**, microphone to virtual microphone, engine side. The fake
+backend runs the devices in lock-step in simulated time, so the measured
+delay excludes one capture and one playback period (which lock-step
+pumping does not have) and includes half a period of offset between the
+two callbacks; the estimate is what the engine reports in
+`EngineStats::virtualMicLatency`.
+
+| Period (frames) | Voice | Noise reduction | Capture | Noise red. | Voice | Limiter | Buffer | Resampler | Playback | Estimate (ms) | Measured, lock-step (ms) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 64 | none | off | 1.33 | 0.00 | 0.00 | 1.48 | 2.00 | 0.98 | 1.33 | 7.1 | 5.1 |
+| 64 | Deep Baritone | on | 1.33 | 20.00 | 30.17 | 1.48 | 2.00 | 0.98 | 1.33 | 57.3 | 55.2 |
+| 128 | none | off | 2.67 | 0.00 | 0.00 | 1.48 | 2.00 | 0.98 | 2.67 | 9.8 | 5.8 |
+| 128 | Deep Baritone | on | 2.67 | 20.00 | 30.17 | 1.48 | 2.00 | 0.98 | 2.67 | 60.0 | 55.8 |
+| 256 | none | off | 5.33 | 0.00 | 0.00 | 1.48 | 2.00 | 0.98 | 5.33 | 15.1 | 7.1 |
+| 256 | Deep Baritone | on | 5.33 | 20.00 | 30.17 | 1.48 | 2.00 | 0.98 | 5.33 | 65.3 | 57.2 |
+| 480 | none | off | 10.00 | 0.00 | 0.00 | 1.48 | 2.00 | 0.98 | 10.00 | 24.5 | 9.4 |
+| 480 | Deep Baritone | on | 10.00 | 20.00 | 30.17 | 1.48 | 2.00 | 0.98 | 10.00 | 74.6 | 59.4 |
+
+With Clean Voice-type voices (no pitch shift) and noise reduction off,
+the engine side is 7 to 10 ms at 64 to 128-frame periods, inside the
+20 ms round-trip target once the device adds its own buffering (to be
+measured, checklist A6). Pitch-shifted voices add 30.2 ms of algorithmic
+latency (two periods of the lowest expected voice pitch, 75 Hz), and
+noise reduction adds 20 ms.
+
+**Drift compensation**, from `OutputStage` between a producer on the
+engine clock and a device whose clock runs fast or slow, with producer
+callbacks up to 1.5 ms late at random (test `Output stage absorbs clock
+drift without dropouts`):
+
+| Device rate | Producer/device block | Clock error (ppm) | Underruns | Overruns | Trim found (ppm) | Trim spread (ppm) | Mean buffer (ms) | Tone-to-noise (dB) |
+|---|---|---|---|---|---|---|---|---|
+| 48000 | 128/128 | -300 | 0 | 0 | -298.4 | 9.6 | 3.34 | 97.4 |
+| 48000 | 128/128 | +0 | 0 | 0 | +1.8 | 9.9 | 2.82 | 125.3 |
+| 48000 | 128/128 | +300 | 0 | 0 | +301.6 | 9.7 | 3.36 | 97.4 |
+| 44100 | 128/441 | -300 | 0 | 0 | -298.4 | 9.7 | 3.45 | 97.4 |
+| 44100 | 128/441 | +0 | 0 | 0 | +1.7 | 9.6 | 3.39 | 125.4 |
+| 44100 | 128/441 | +300 | 0 | 0 | +301.6 | 9.7 | 3.42 | 97.5 |
+| 48000 | 480/128 | -300 | 0 | 0 | -299.6 | 21.8 | 7.04 | 97.5 |
+| 48000 | 480/128 | +0 | 0 | 0 | +0.8 | 21.0 | 7.01 | 125.7 |
+| 48000 | 480/128 | +300 | 0 | 0 | +300.4 | 21.8 | 7.04 | 97.4 |
+| 96000 | 256/512 | -300 | 0 | 0 | -301.7 | 15.7 | 3.99 | 97.4 |
+| 96000 | 256/512 | +0 | 0 | 0 | -1.6 | 15.9 | 2.77 | 122.6 |
+| 96000 | 256/512 | +300 | 0 | 0 | +298.3 | 16.0 | 4.99 | 97.5 |
+
+97.4 dB is the converter's own floor at a non-unity ratio (a fixed
+1.0003 ratio measures the same); at exactly matched clocks the output is
+125 dB clean.
+
+Other engine results, each from a named test in `engine/tests/`:
+
+* Voice switching: no sample step larger than the input sine's own
+  slope during the 20 ms crossfade; the new voice is at its exact preset
+  level from its first sample (a new chain settles its parameter ramps
+  before it is handed over).
+* Allocation: zero allocations or frees on the audio path with noise
+  reduction, gate, hear-myself, six voice switches, a clip replacement,
+  speech, and overlapping sounds in flight, and through the whole
+  capture callback including input resampling.
+* Device loss: losing the microphone keeps the soundboard playing into
+  the virtual mic (pull mode) and reopens the microphone when it returns;
+  losing the headphones keeps the virtual mic running; a returning
+  device that fails to open is skipped, and only when nothing can be
+  reopened does the engine stop with the backend's reason.
+* Threads: capture, two playback threads at different rates, and the
+  control thread switching voices, loading sounds, and queueing speech
+  for 1.5 s run clean under ThreadSanitizer.
 
 ## Reproducing the numbers
 
@@ -352,5 +498,6 @@ need the test support library, so `VOX_BUILD_TESTS` must be on).
 cmake --preset release && cmake --build --preset release
 ./build/release/tools/vox_bench_pitch   # pitch engine comparison table
 ./build/release/tools/vox_bench_noise   # RNNoise suppression table
+./build/release/tools/vox_bench_engine  # engine cost, latency, and drift tables
 ctest --preset release                  # every functional test quoted above
 ```
