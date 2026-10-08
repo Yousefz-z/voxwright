@@ -65,7 +65,8 @@ cmake --preset tsan && cmake --build --preset tsan && ctest --preset tsan
 ```
 
 Windows CI runs `cmake --preset windows`, `cmake --build --preset windows`,
-`ctest --preset windows`. macOS CI runs the `macos` and `macos-asan` presets.
+`ctest --preset windows`. macOS CI runs the `macos` and `macos-asan` presets,
+only when the workflow is started by hand (decision D37).
 
 Changes to the optional neural voice track (`ml/`, see
 [docs/ml.md](docs/ml.md)) also need it built and tested with the flag on:

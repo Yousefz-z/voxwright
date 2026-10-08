@@ -354,3 +354,12 @@ loaded machine, past the 0.25 budget. Sanitizer builds therefore define
 `VOX_TESTING_INSTRUMENTED`, and timing checks multiply their budget by
 `vox::testing::kTimingScale` (8 there, 1 elsewhere). The real-time budget
 itself is enforced, unscaled, by the release and clang test runs.
+
+## D37. macOS CI runs on demand
+
+*2026-10-08.* The repository is private, where GitHub bills each macOS
+runner minute as ten, and the two macOS test jobs took about 40 minutes
+per run. No Mac is available to test on for now, so pull requests and
+pushes to `main` get Linux and Windows CI, and the macOS jobs (tests,
+disk image, and the driver compile check) run only when the workflow is
+started by hand from the Actions tab.

@@ -39,10 +39,11 @@ and has not been verified yet.
 
 ## Installing
 
-CI is set up to build a Windows installer (Inno Setup) and a macOS disk
-image on every push, as run artifacts. Those jobs have not run yet: this
-code was developed without access to Windows or macOS, so the first CI run
-is their first test. Neither installer is code-signed,
+CI is set up to build a Windows installer (Inno Setup) for every pull
+request and push to `main`, and a macOS disk image when the workflow is
+started by hand, as run artifacts. Neither has been installed on a real
+machine yet: this code was developed without access to Windows or macOS.
+Neither installer is code-signed,
 so Windows SmartScreen and macOS Gatekeeper warn on first start (on macOS,
 right-click the app and choose Open). Voxwright needs a virtual audio
 cable: [VB-CABLE](https://vb-audio.com/Cable/) on Windows or

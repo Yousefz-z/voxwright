@@ -198,6 +198,10 @@ jobs:
 
   macos:
     name: macOS ${{ matrix.preset }}
+    # macOS minutes bill tenfold on a private repository and no Mac is
+    # available to test on yet, so the macOS jobs run only when the workflow
+    # is started by hand (Actions, CI, Run workflow). Decision D37.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-14
     strategy:
       fail-fast: false
@@ -252,6 +256,7 @@ jobs:
 
   macos-driver:
     name: macOS driver (compile only)
+    if: github.event_name == 'workflow_dispatch' # see the macos job
     runs-on: macos-14
     # The virtual microphone driver was written without access to a Mac and
     # has never been loaded or tested (drivers/macos/README.md). This job
