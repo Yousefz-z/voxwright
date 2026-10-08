@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "id": "low-tenor",
+  "name": "Low Tenor",
+  "category": "Natural",
+  "description": "Slightly deeper and calmer; subtle enough for meetings.",
+  "icon": "natural",
+  "color": "#4FB3BF",
+  "tags": [
+    "subtle"
+  ],
+  "outputGainDb": 0.6,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -3,
+        "formant": -1
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "depth",
+      "name": "Depth",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "semitones",
+          "from": 0,
+          "to": -6,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": -3
+  }
+}

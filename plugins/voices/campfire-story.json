@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "id": "campfire-story",
+  "name": "Campfire Story",
+  "category": "Place",
+  "description": "Warm and close by a crackling fire.",
+  "icon": "place",
+  "color": "#2A9D8F",
+  "tags": [
+    "cozy",
+    "fire"
+  ],
+  "outputGainDb": 5.5,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowShelfDb": 5.0,
+        "lowShelfHz": 220.0,
+        "highShelfDb": -5.0,
+        "highShelfHz": 4000.0
+      }
+    },
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -26.0,
+        "ratio": 3.0,
+        "makeup": 4.0
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.3,
+        "decay": 0.8,
+        "mix": 0.1
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Fire",
+        "level": -28.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "background",
+      "name": "Fire",
+      "default": 0.7273,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -16,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 0
+  }
+}

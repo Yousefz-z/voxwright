@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "id": "shadow-agent",
+  "name": "Shadow Agent",
+  "category": "Character",
+  "description": "An anonymous informant: disguised pitch and formants.",
+  "icon": "character",
+  "color": "#E07A5F",
+  "tags": [
+    "anonymous"
+  ],
+  "outputGainDb": 3.3,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -4,
+        "formant": 2
+      }
+    },
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -24.0,
+        "ratio": 4.0,
+        "makeup": 5.0
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 180.0,
+        "mid2Db": 4.0,
+        "mid2Hz": 1200.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "disguise",
+      "name": "Disguise",
+      "default": 0.625,
+      "targets": [
+        {
+          "block": 0,
+          "param": "formant",
+          "from": -3,
+          "to": 5,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": -4
+  }
+}

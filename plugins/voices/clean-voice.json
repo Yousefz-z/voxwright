@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "id": "clean-voice",
+  "name": "Clean Voice",
+  "category": "Utility",
+  "description": "Your own voice, polished: rumble removed, mud reduced, clarity added.",
+  "icon": "utility",
+  "color": "#7D8597",
+  "tags": [
+    "natural",
+    "clean"
+  ],
+  "outputGainDb": 3.8,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 80.0,
+        "mid1Db": -3.0,
+        "mid1Hz": 300.0,
+        "mid3Db": 2.5,
+        "mid3Hz": 4500.0
+      }
+    },
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -22.0,
+        "ratio": 2.5,
+        "makeup": 3.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "clarity",
+      "name": "Clarity",
+      "default": 0.4167,
+      "targets": [
+        {
+          "block": 0,
+          "param": "mid3Db",
+          "from": 0,
+          "to": 6,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 0,
+    "maxLatencyMs": 1.0
+  }
+}

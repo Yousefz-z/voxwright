@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "id": "masked-villain",
+  "name": "Masked Villain",
+  "category": "Character",
+  "description": "A menacing, gravelly voice behind a mask.",
+  "icon": "character",
+  "color": "#E07A5F",
+  "tags": [
+    "villain",
+    "deep"
+  ],
+  "outputGainDb": -0.0,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -7,
+        "formant": -3
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Tube",
+        "drive": 18.0,
+        "mix": 0.35,
+        "output": -4.0,
+        "tone": 6000.0
+      }
+    },
+    {
+      "effect": "comb",
+      "params": {
+        "frequency": 650.0,
+        "feedback": 0.35,
+        "mix": 0.2
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.25,
+        "decay": 0.6,
+        "mix": 0.12
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "menace",
+      "name": "Menace",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "semitones",
+          "from": -3,
+          "to": -11,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "grit",
+      "name": "Grit",
+      "default": 0.4375,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 0.8,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": -7
+  }
+}

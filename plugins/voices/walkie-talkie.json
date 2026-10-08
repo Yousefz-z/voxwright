@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "id": "walkie-talkie",
+  "name": "Walkie-Talkie",
+  "category": "Device",
+  "description": "A clipped two-way radio with static.",
+  "icon": "device",
+  "color": "#C9A227",
+  "tags": [
+    "radio"
+  ],
+  "outputGainDb": 4.7,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 500.0,
+        "highCut": true,
+        "highCutHz": 2800.0
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Hard",
+        "drive": 18.0,
+        "mix": 0.6,
+        "output": -6.0
+      }
+    },
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -20.0,
+        "ratio": 6.0,
+        "makeup": 4.0
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Radio static",
+        "level": -34.0
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 400.0,
+        "highCut": true,
+        "highCutHz": 3000.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "clip",
+      "name": "Clipping",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 1,
+          "param": "drive",
+          "from": 6,
+          "to": 30,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Static",
+      "default": 0.65,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -20,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

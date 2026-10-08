@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "id": "cassette-memo",
+  "name": "Cassette Memo",
+  "category": "Device",
+  "description": "A worn cassette recording: tape wow, saturation, and hiss.",
+  "icon": "device",
+  "color": "#C9A227",
+  "tags": [
+    "tape",
+    "vintage"
+  ],
+  "outputGainDb": -1.2,
+  "blocks": [
+    {
+      "effect": "vibrato",
+      "params": {
+        "rate": 1.1,
+        "depth": 15.0
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "highCut": true,
+        "highCutHz": 7000.0,
+        "lowCut": true,
+        "lowCutHz": 90.0,
+        "lowShelfDb": 3.0
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Tube",
+        "drive": 12.0,
+        "output": -4.0,
+        "mix": 0.5
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Radio static",
+        "level": -38.0,
+        "tone": 9000.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "wow",
+      "name": "Tape wow",
+      "default": 0.375,
+      "targets": [
+        {
+          "block": 0,
+          "param": "depth",
+          "from": 0,
+          "to": 40,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Hiss",
+      "default": 0.6471,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -26,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

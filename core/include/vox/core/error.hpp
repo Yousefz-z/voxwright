@@ -53,7 +53,7 @@ enum class ErrorCode {
 /// A failure with a message meant for the user (what happened and what to do)
 /// and an optional technical detail meant for logs.
 struct Error {
-    ErrorCode code;
+    ErrorCode code = ErrorCode::InvalidArgument;
     std::string message;
     std::string detail;
 };

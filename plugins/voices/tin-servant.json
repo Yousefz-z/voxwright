@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "id": "tin-servant",
+  "name": "Tin Servant",
+  "category": "Machine",
+  "description": "A monotone tin robot with a hollow metal chest.",
+  "icon": "machine",
+  "color": "#5C7CFA",
+  "tags": [
+    "robot",
+    "monotone"
+  ],
+  "outputGainDb": 2.0,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": 0,
+        "formant": 0,
+        "mode": "Robot",
+        "robotHz": 110.0
+      }
+    },
+    {
+      "effect": "comb",
+      "params": {
+        "frequency": 220.0,
+        "feedback": 0.6,
+        "mix": 0.4
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 150.0,
+        "highCut": true,
+        "highCutHz": 6000.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "note",
+      "name": "Note",
+      "default": 0.4786,
+      "targets": [
+        {
+          "block": 0,
+          "param": "robotHz",
+          "from": 70,
+          "to": 180,
+          "curve": "exponential"
+        }
+      ]
+    },
+    {
+      "id": "metal",
+      "name": "Metal",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 0.8,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "fixedPitchHz": 110.0
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "id": "city-corner",
+  "name": "City Corner",
+  "category": "Place",
+  "description": "On the street with traffic passing by.",
+  "icon": "place",
+  "color": "#2A9D8F",
+  "tags": [
+    "outdoors",
+    "city"
+  ],
+  "outputGainDb": 4.1,
+  "blocks": [
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -22.0,
+        "ratio": 3.0,
+        "makeup": 3.0
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.4,
+        "decay": 0.6,
+        "mix": 0.08
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Traffic",
+        "level": -26.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "background",
+      "name": "Traffic",
+      "default": 0.7391,
+      "targets": [
+        {
+          "block": 2,
+          "param": "level",
+          "from": -60,
+          "to": -14,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 0
+  }
+}

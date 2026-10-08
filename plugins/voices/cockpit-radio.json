@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "id": "cockpit-radio",
+  "name": "Cockpit Radio",
+  "category": "Device",
+  "description": "A pilot over the intercom with engine drone.",
+  "icon": "device",
+  "color": "#C9A227",
+  "tags": [
+    "pilot",
+    "radio"
+  ],
+  "outputGainDb": 8.4,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 400.0,
+        "highCut": true,
+        "highCutHz": 3200.0
+      }
+    },
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -30.0,
+        "ratio": 8.0,
+        "makeup": 8.0
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Soft",
+        "drive": 10.0,
+        "mix": 0.5,
+        "output": -4.0
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Engine hum",
+        "level": -30.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "background",
+      "name": "Engine",
+      "default": 0.7143,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -18,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

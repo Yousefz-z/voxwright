@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "id": "stage-narrator",
+  "name": "Stage Narrator",
+  "category": "Character",
+  "description": "A warm trailer-announcer voice with polish.",
+  "icon": "character",
+  "color": "#E07A5F",
+  "tags": [
+    "announcer",
+    "warm"
+  ],
+  "outputGainDb": 4.6,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -2,
+        "formant": -1
+      }
+    },
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -26.0,
+        "ratio": 4.0,
+        "makeup": 6.0
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "lowShelfDb": 4.0,
+        "lowShelfHz": 160.0,
+        "highShelfDb": 2.0
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.6,
+        "decay": 1.4,
+        "mix": 0.12
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "warmth",
+      "name": "Warmth",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 2,
+          "param": "lowShelfDb",
+          "from": 0,
+          "to": 8,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "hall",
+      "name": "Hall",
+      "default": 0.3,
+      "targets": [
+        {
+          "block": 3,
+          "param": "mix",
+          "from": 0,
+          "to": 0.4,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": -2
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "id": "orbital-comms",
+  "name": "Orbital Comms",
+  "category": "Space",
+  "description": "A transmission bounced off a satellite.",
+  "icon": "space",
+  "color": "#3D5A80",
+  "tags": [
+    "scifi",
+    "radio"
+  ],
+  "outputGainDb": 5.6,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 350.0,
+        "highCut": true,
+        "highCutHz": 3800.0
+      }
+    },
+    {
+      "effect": "freqshift",
+      "params": {
+        "shift": 12.0,
+        "mix": 0.35
+      }
+    },
+    {
+      "effect": "echo",
+      "params": {
+        "time": 180.0,
+        "feedback": 0.25,
+        "mix": 0.2
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Computer",
+        "level": -36.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "delay",
+      "name": "Delay",
+      "default": 0.4,
+      "targets": [
+        {
+          "block": 2,
+          "param": "mix",
+          "from": 0,
+          "to": 0.5,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Beeps",
+      "default": 0.6316,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -22,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

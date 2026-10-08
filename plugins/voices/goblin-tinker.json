@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "id": "goblin-tinker",
+  "name": "Goblin Tinker",
+  "category": "Creature",
+  "description": "A wiry, nasal little goblin.",
+  "icon": "creature",
+  "color": "#8E5DB8",
+  "tags": [
+    "goblin",
+    "funny"
+  ],
+  "outputGainDb": 3.7,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": 4,
+        "formant": 7
+      }
+    },
+    {
+      "effect": "ringmod",
+      "params": {
+        "frequency": 30.0,
+        "mix": 0.2
+      }
+    },
+    {
+      "effect": "phaser",
+      "params": {
+        "rate": 0.6,
+        "mix": 0.3
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "nasal",
+      "name": "Nasal",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "formant",
+          "from": 3,
+          "to": 11,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "buzz",
+      "name": "Buzz",
+      "default": 0.4,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 0.5,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 4
+  }
+}

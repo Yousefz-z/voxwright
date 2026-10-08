@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "id": "cathedral",
+  "name": "Cathedral",
+  "category": "Place",
+  "description": "Speak from the altar of a stone cathedral.",
+  "icon": "place",
+  "color": "#2A9D8F",
+  "tags": [
+    "reverb",
+    "church"
+  ],
+  "outputGainDb": -2.0,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 100.0
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 1.0,
+        "decay": 4.5,
+        "predelay": 30.0,
+        "damping": 7000.0,
+        "mix": 0.45
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "space",
+      "name": "Space",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0.1,
+          "to": 0.8,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "decay",
+      "name": "Decay",
+      "default": 0.585,
+      "targets": [
+        {
+          "block": 1,
+          "param": "decay",
+          "from": 2,
+          "to": 8,
+          "curve": "exponential"
+        }
+      ]
+    }
+  ]
+}

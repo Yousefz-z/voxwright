@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "android-drift",
+  "name": "Android Drift",
+  "category": "Machine",
+  "description": "A smooth synthetic voice with a subtle inharmonic shift.",
+  "icon": "machine",
+  "color": "#5C7CFA",
+  "tags": [
+    "android",
+    "subtle"
+  ],
+  "outputGainDb": 5.3,
+  "blocks": [
+    {
+      "effect": "freqshift",
+      "params": {
+        "shift": 25.0,
+        "mix": 0.6
+      }
+    },
+    {
+      "effect": "chorus",
+      "params": {
+        "voices": 2.0,
+        "rate": 0.5,
+        "depth": 2.0,
+        "mix": 0.35
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "highShelfDb": 2.0,
+        "mid1Db": -2.0,
+        "mid1Hz": 400.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "shift",
+      "name": "Shift",
+      "default": 0.4167,
+      "targets": [
+        {
+          "block": 0,
+          "param": "shift",
+          "from": 0,
+          "to": 60,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

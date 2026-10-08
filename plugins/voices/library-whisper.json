@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "id": "library-whisper",
+  "name": "Library Whisper",
+  "category": "Character",
+  "description": "Every word whispered, no matter how you speak.",
+  "icon": "character",
+  "color": "#E07A5F",
+  "tags": [
+    "whisper",
+    "quiet"
+  ],
+  "outputGainDb": 1.1,
+  "blocks": [
+    {
+      "effect": "whisper",
+      "params": {
+        "mix": 1.0
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "mid3Db": 4.0,
+        "mid3Hz": 3500.0,
+        "lowCut": true,
+        "lowCutHz": 150.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "breath",
+      "name": "Breath",
+      "default": 1.0,
+      "targets": [
+        {
+          "block": 0,
+          "param": "mix",
+          "from": 0.4,
+          "to": 1.0,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "unpitched": true
+  }
+}

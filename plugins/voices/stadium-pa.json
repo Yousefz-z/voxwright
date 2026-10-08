@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "id": "stadium-pa",
+  "name": "Stadium PA",
+  "category": "Place",
+  "description": "Your voice over stadium speakers and a crowd.",
+  "icon": "place",
+  "color": "#2A9D8F",
+  "tags": [
+    "announcer",
+    "crowd"
+  ],
+  "outputGainDb": 1.0,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 250.0,
+        "mid3Db": 3.0
+      }
+    },
+    {
+      "effect": "echo",
+      "params": {
+        "time": 140.0,
+        "feedback": 0.2,
+        "mix": 0.25
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 1.0,
+        "decay": 3.0,
+        "mix": 0.3
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Crowd",
+        "level": -28.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "space",
+      "name": "Space",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 2,
+          "param": "mix",
+          "from": 0,
+          "to": 0.6,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Crowd",
+      "default": 0.7273,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -16,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "id": "rainy-window",
+  "name": "Rainy Window",
+  "category": "Place",
+  "description": "A quiet room with rain on the glass.",
+  "icon": "place",
+  "color": "#2A9D8F",
+  "tags": [
+    "cozy",
+    "rain"
+  ],
+  "outputGainDb": 0.0,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "highCut": true,
+        "highCutHz": 9000.0,
+        "lowShelfDb": 2.0
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.25,
+        "decay": 0.7,
+        "mix": 0.12
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Rain",
+        "level": -26.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "background",
+      "name": "Rain",
+      "default": 0.7391,
+      "targets": [
+        {
+          "block": 2,
+          "param": "level",
+          "from": -60,
+          "to": -14,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 0
+  }
+}

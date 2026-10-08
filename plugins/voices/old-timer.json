@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "id": "old-timer",
+  "name": "Old Timer",
+  "category": "Natural",
+  "description": "Shaky, breathy, and a little hoarse.",
+  "icon": "natural",
+  "color": "#4FB3BF",
+  "tags": [
+    "elderly"
+  ],
+  "outputGainDb": 0.7,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -2,
+        "formant": -1
+      }
+    },
+    {
+      "effect": "vibrato",
+      "params": {
+        "rate": 6.5,
+        "depth": 25.0
+      }
+    },
+    {
+      "effect": "whisper",
+      "params": {
+        "mix": 0.15
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "highCut": true,
+        "highCutHz": 7000.0,
+        "mid1Db": 2.0,
+        "mid1Hz": 600.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "tremble",
+      "name": "Tremble",
+      "default": 0.4167,
+      "targets": [
+        {
+          "block": 1,
+          "param": "depth",
+          "from": 0,
+          "to": 60,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "breath",
+      "name": "Breath",
+      "default": 0.3,
+      "targets": [
+        {
+          "block": 2,
+          "param": "mix",
+          "from": 0,
+          "to": 0.5,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": -2
+  }
+}

@@ -10,8 +10,9 @@
 namespace vox::dsp {
 
 /// Seven-stage tone shaper: high-pass, low shelf, three peaks, high shelf,
-/// low-pass. Frequencies and gains glide (coefficients are recomputed every
-/// 32 samples while a parameter is moving), so sweeps do not click.
+/// low-pass. The cuts are fourth-order Butterworth (24 dB/octave). Frequencies and gains glide
+/// (coefficients are recomputed every 32 samples while a parameter is moving), so sweeps do not
+/// click.
 class Equalizer {
 public:
     enum Band : std::size_t {
@@ -40,6 +41,7 @@ public:
 private:
     struct BandState {
         Biquad filter;
+        Biquad second; ///< Cut bands only: second Butterworth section (24 dB/octave).
         SmoothedValue frequency;
         SmoothedValue gainDb;
         float q = 0.707F;

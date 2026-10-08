@@ -21,7 +21,7 @@ void Ambience::prepare(double sampleRate) {
     level_.prepare(sampleRate, 50.0F);
     level_.setImmediate(-18.0F);
     enabled_.prepare(sampleRate, 200.0F);
-    enabled_.setImmediate(1.0F);
+    enabled_.setImmediate(enabledFlag_ ? 1.0F : 0.0F);
     lowCut_.setCoefficients(designBiquad(BiquadType::Highpass, sampleRate, 30.0, 0.707));
     setToneHz(8000.0F);
     setKind(kind_);

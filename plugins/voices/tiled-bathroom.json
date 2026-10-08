@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "id": "tiled-bathroom",
+  "name": "Tiled Bathroom",
+  "category": "Place",
+  "description": "Bright, close reflections off tiles.",
+  "icon": "place",
+  "color": "#2A9D8F",
+  "tags": [
+    "reverb",
+    "small"
+  ],
+  "outputGainDb": -1.6,
+  "blocks": [
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.15,
+        "decay": 0.9,
+        "damping": 14000.0,
+        "predelay": 2.0,
+        "mix": 0.5
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "space",
+      "name": "Space",
+      "default": 0.5714,
+      "targets": [
+        {
+          "block": 0,
+          "param": "mix",
+          "from": 0.1,
+          "to": 0.8,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 0
+  }
+}

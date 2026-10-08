@@ -47,6 +47,8 @@ private:
     float inputPower_ = 0.0F;  // smoothed power of the dry input
     float outputPower_ = 0.0F; // smoothed power of the raw whisper
     float levelCoeff_ = 0.0F;
+    float gainFallCoeff_ = 0.0F;
+    float gainRiseCoeff_ = 0.0F;
     float levelGain_ = 1.0F;
     FastRandom noise_{0xC0FFEEU};
     SmoothedValue mix_;

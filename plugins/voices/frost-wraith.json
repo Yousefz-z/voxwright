@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "id": "frost-wraith",
+  "name": "Frost Wraith",
+  "category": "Creature",
+  "description": "A cold, hollow spirit with icy shimmer.",
+  "icon": "creature",
+  "color": "#8E5DB8",
+  "tags": [
+    "ghost",
+    "cold"
+  ],
+  "outputGainDb": 5.8,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -5,
+        "formant": -2
+      }
+    },
+    {
+      "effect": "whisper",
+      "params": {
+        "mix": 0.5
+      }
+    },
+    {
+      "effect": "freqshift",
+      "params": {
+        "shift": -15.0,
+        "mix": 0.4
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.95,
+        "decay": 4.5,
+        "damping": 12000.0,
+        "mix": 0.35
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "chill",
+      "name": "Chill",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 2,
+          "param": "mix",
+          "from": 0,
+          "to": 0.8,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "hollow",
+      "name": "Hollow",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 3,
+          "param": "mix",
+          "from": 0.1,
+          "to": 0.6,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

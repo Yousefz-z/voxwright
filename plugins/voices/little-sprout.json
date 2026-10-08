@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "id": "little-sprout",
+  "name": "Little Sprout",
+  "category": "Natural",
+  "description": "A small child: high pitch and a short vocal tract.",
+  "icon": "natural",
+  "color": "#4FB3BF",
+  "tags": [
+    "child",
+    "kid"
+  ],
+  "outputGainDb": 0.4,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": 7,
+        "formant": 6
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "highShelfDb": 3.0,
+        "lowCut": true,
+        "lowCutHz": 150.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "age",
+      "name": "Age",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "formant",
+          "from": 9,
+          "to": 3,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 7
+  }
+}

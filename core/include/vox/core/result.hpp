@@ -3,8 +3,8 @@
 #include <vox/core/error.hpp>
 
 #include <cstdlib>
+#include <optional>
 #include <utility>
-#include <variant>
 
 namespace vox {
 
@@ -16,44 +16,45 @@ public:
     // Implicit on purpose so functions can `return value;` or `return error;`.
     // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
     Result(T value)
-        : storage_(std::in_place_index<0>, std::move(value)) {}
+        : value_(std::move(value)) {}
     // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
     Result(Error error)
-        : storage_(std::in_place_index<1>, std::move(error)) {}
+        : error_(std::move(error)) {}
 
-    [[nodiscard]] bool hasValue() const noexcept { return storage_.index() == 0; }
+    [[nodiscard]] bool hasValue() const noexcept { return value_.has_value(); }
     explicit operator bool() const noexcept { return hasValue(); }
 
     [[nodiscard]] T& value() & {
-        requireValue();
-        return std::get<0>(storage_);
+        if (!value_.has_value()) {
+            std::abort();
+        }
+        return *value_;
     }
     [[nodiscard]] const T& value() const& {
-        requireValue();
-        return std::get<0>(storage_);
+        if (!value_.has_value()) {
+            std::abort();
+        }
+        return *value_;
     }
     [[nodiscard]] T&& value() && {
-        requireValue();
-        return std::get<0>(std::move(storage_));
+        if (!value_.has_value()) {
+            std::abort();
+        }
+        return std::move(*value_);
     }
 
     [[nodiscard]] const Error& error() const& {
         if (hasValue()) {
             std::abort();
         }
-        return std::get<1>(storage_);
+        return error_;
     }
 
-    [[nodiscard]] T valueOr(T fallback) const& { return hasValue() ? value() : fallback; }
+    [[nodiscard]] T valueOr(T fallback) const& { return value_.has_value() ? *value_ : fallback; }
 
 private:
-    void requireValue() const {
-        if (!hasValue()) {
-            std::abort();
-        }
-    }
-
-    std::variant<T, Error> storage_;
+    std::optional<T> value_;
+    Error error_;
 };
 
 /// Success-or-error for operations without a value.

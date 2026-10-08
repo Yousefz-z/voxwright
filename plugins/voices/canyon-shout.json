@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "id": "canyon-shout",
+  "name": "Canyon Shout",
+  "category": "Place",
+  "description": "Long echoes across a windy canyon.",
+  "icon": "place",
+  "color": "#2A9D8F",
+  "tags": [
+    "echo",
+    "outdoors"
+  ],
+  "outputGainDb": -0.2,
+  "blocks": [
+    {
+      "effect": "echo",
+      "params": {
+        "time": 450.0,
+        "feedback": 0.45,
+        "damping": 3500.0,
+        "mix": 0.4
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.9,
+        "decay": 2.0,
+        "mix": 0.15
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Wind",
+        "level": -34.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "echo",
+      "name": "Echo",
+      "default": 0.5714,
+      "targets": [
+        {
+          "block": 0,
+          "param": "mix",
+          "from": 0,
+          "to": 0.7,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Wind",
+      "default": 0.65,
+      "targets": [
+        {
+          "block": 2,
+          "param": "level",
+          "from": -60,
+          "to": -20,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

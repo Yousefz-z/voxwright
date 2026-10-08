@@ -44,7 +44,7 @@ through Catch2 without a UI or audio device.
 |---|---|---|
 | `core/` | `Result<T>`, typed `Error` with actionable messages, SPSC queue, SPSC ring buffer, triple buffer | none |
 | `dsp/` | Biquad/SVF filters, delay lines, LFOs, envelope followers, pitch tracker, PSOLA pitch shifter, spectral shifter, vocoder, FDN reverb, dynamics, distortion, modulation effects, ambience synthesis, loudness meter, RNNoise wrapper, offline render helper used by tests | Signalsmith Stretch (MIT), RNNoise (BSD-3) |
-| `plugins/` | Effect descriptors (parameter metadata), factory registry, node wrappers, preset and macro model, JSON preset parser, 44 voice presets | nlohmann/json (MIT) |
+| `plugins/` | Effect descriptors (parameter metadata), factory registry, node wrappers, preset and macro model, JSON preset parser, 54 voice presets | nlohmann/json (MIT) |
 | `engine/` | Audio graph, voice chain hot swap, transmit control (mute, push-to-talk, push-to-mute, censor), soundboard player, mixer buses, output limiter, drift compensation, metering, command and event queues | libsamplerate (BSD-2) |
 | `devices/` | `AudioBackend` interface, miniaudio backend, fake backend, audio file decoding, virtual cable detection, loopback test | miniaudio (MIT-0) |
 | `app/` | QML UI, view models, global hotkeys, tray, autostart, settings store, text-to-speech capture, first-run flow | Qt 6.8 (LGPL-3) |

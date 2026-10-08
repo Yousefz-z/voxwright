@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "id": "mountain-giant",
+  "name": "Mountain Giant",
+  "category": "Character",
+  "description": "An enormous, slow, booming voice.",
+  "icon": "character",
+  "color": "#E07A5F",
+  "tags": [
+    "giant",
+    "deep"
+  ],
+  "outputGainDb": -0.9,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -12,
+        "formant": -6
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "lowShelfDb": 4.0,
+        "highShelfDb": -3.0
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.9,
+        "decay": 2.4,
+        "mix": 0.2
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "size",
+      "name": "Size",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "semitones",
+          "from": -7,
+          "to": -17,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "name": "Space",
+      "default": 0.4,
+      "targets": [
+        {
+          "block": 2,
+          "param": "mix",
+          "from": 0,
+          "to": 0.5,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": -12
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "id": "glitch-unit",
+  "name": "Glitch Unit",
+  "category": "Machine",
+  "description": "A malfunctioning android that skips and crunches.",
+  "icon": "machine",
+  "color": "#5C7CFA",
+  "tags": [
+    "glitch",
+    "robot"
+  ],
+  "outputGainDb": 5.4,
+  "blocks": [
+    {
+      "effect": "stutter",
+      "params": {
+        "slice": 70.0,
+        "probability": 0.25,
+        "repeats": 3.0
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Crush",
+        "bits": 6.0,
+        "downsample": 3.0,
+        "drive": 0.0,
+        "output": -3.0,
+        "mix": 0.7
+      }
+    },
+    {
+      "effect": "freqshift",
+      "params": {
+        "shift": 40.0,
+        "mix": 0.5
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "glitch",
+      "name": "Glitch",
+      "default": 0.4167,
+      "targets": [
+        {
+          "block": 0,
+          "param": "probability",
+          "from": 0,
+          "to": 0.6,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "crunch",
+      "name": "Crunch",
+      "default": 0.7,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 1,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

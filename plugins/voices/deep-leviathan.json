@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "id": "deep-leviathan",
+  "name": "Deep Leviathan",
+  "category": "Creature",
+  "description": "A titanic sea beast calling from the depths.",
+  "icon": "creature",
+  "color": "#8E5DB8",
+  "tags": [
+    "sea",
+    "monster"
+  ],
+  "outputGainDb": 0.9,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -14,
+        "formant": -7
+      }
+    },
+    {
+      "effect": "filter",
+      "params": {
+        "mode": "Low-pass",
+        "cutoff": 900.0,
+        "resonance": 1.4
+      }
+    },
+    {
+      "effect": "phaser",
+      "params": {
+        "rate": 0.12,
+        "mix": 0.35,
+        "feedback": 0.5
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Underwater",
+        "level": -30.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "depth",
+      "name": "Depth",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "semitones",
+          "from": -9,
+          "to": -19,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "murk",
+      "name": "Murk",
+      "default": 0.5975,
+      "targets": [
+        {
+          "block": 1,
+          "param": "cutoff",
+          "from": 3000,
+          "to": 400,
+          "curve": "exponential"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Background",
+      "default": 0.7143,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -18,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": -14
+  }
+}

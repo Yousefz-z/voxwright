@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "id": "squeaky-toy",
+  "name": "Squeaky Toy",
+  "category": "Character",
+  "description": "A tiny, sped-up squeak; formants rise with pitch.",
+  "icon": "character",
+  "color": "#E07A5F",
+  "tags": [
+    "funny",
+    "high"
+  ],
+  "outputGainDb": -0.7,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": 12,
+        "formant": 12
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "squeak",
+      "name": "Squeak",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "semitones",
+          "from": 6,
+          "to": 18,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 12
+  }
+}

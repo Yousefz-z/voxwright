@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "id": "hard-tune",
+  "name": "Hard Tune",
+  "category": "Musical",
+  "description": "Snaps your pitch to the C major scale, pop style.",
+  "icon": "musical",
+  "color": "#D65DB1",
+  "tags": [
+    "autotune",
+    "singing"
+  ],
+  "outputGainDb": 1.5,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": 0,
+        "formant": 0,
+        "mode": "Tune",
+        "key": "C",
+        "scale": "Major",
+        "retune": 0.0
+      }
+    },
+    {
+      "effect": "chorus",
+      "params": {
+        "voices": 2.0,
+        "rate": 0.6,
+        "depth": 1.5,
+        "mix": 0.25
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.5,
+        "decay": 1.4,
+        "mix": 0.15
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "retune",
+      "name": "Retune speed",
+      "default": 0.0,
+      "targets": [
+        {
+          "block": 0,
+          "param": "retune",
+          "from": 0,
+          "to": 200,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

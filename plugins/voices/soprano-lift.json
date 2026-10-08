@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "id": "soprano-lift",
+  "name": "Soprano Lift",
+  "category": "Natural",
+  "description": "A high, airy voice with raised formants.",
+  "icon": "natural",
+  "color": "#4FB3BF",
+  "tags": [
+    "female",
+    "high"
+  ],
+  "outputGainDb": 2.9,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": 9,
+        "formant": 4
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "highShelfDb": 3.0,
+        "lowShelfDb": -2.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "height",
+      "name": "Height",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "semitones",
+          "from": 5,
+          "to": 13,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "lightness",
+      "name": "Lightness",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "formant",
+          "from": 1,
+          "to": 7,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 9
+  }
+}

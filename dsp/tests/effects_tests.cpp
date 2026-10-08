@@ -16,6 +16,8 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <algorithm>
+#include <cmath>
+#include <numbers>
 
 using Catch::Approx;
 using namespace vox::dsp::test;
@@ -37,6 +39,21 @@ TEST_CASE("Equalizer output matches its analytic response", "[dsp][eq]") {
         INFO(hz << " Hz: measured " << measured << " dB, expected " << e.magnitudeDb(hz));
         CHECK(measured == Approx(e.magnitudeDb(hz)).margin(0.15));
     }
+}
+
+TEST_CASE("Equalizer cuts are 24 dB per octave Butterworth", "[dsp][eq]") {
+    vox::dsp::Equalizer eq;
+    eq.prepare(kFs);
+    eq.setEnabled(vox::dsp::Equalizer::HighCut, true);
+    eq.setFrequency(vox::dsp::Equalizer::HighCut, 3000.0F);
+    std::vector<float> settle(4800, 0.0F);
+    eq.process(settle); // let the frequency glide finish
+    CHECK(eq.magnitudeDb(3000.0) == Approx(-3.01).margin(0.05));
+    // Bilinear-transform Butterworth: |H|^2 = 1 / (1 + W^8), W the warped ratio.
+    const double w =
+        std::tan(std::numbers::pi * 6000.0 / kFs) / std::tan(std::numbers::pi * 3000.0 / kFs);
+    CHECK(eq.magnitudeDb(6000.0) ==
+          Approx(-10.0 * std::log10(1.0 + std::pow(w, 8.0))).margin(0.05));
 }
 
 TEST_CASE("Multimode filter low-pass attenuates above cutoff", "[dsp][filter]") {
@@ -309,6 +326,27 @@ TEST_CASE("Whisper removes pitch but keeps formants", "[dsp][whisper]") {
     CHECK(vt::envelopeDistanceDb(envIn, envOut, kFs, 300.0, 4000.0) < 6.0);
     CHECK(std::abs(vt::toDb(vt::rms(x)) -
                    vt::toDb(vt::rms(std::span<const float>(in).subspan(9600, 48000)))) < 4.0);
+}
+
+TEST_CASE("Whisper output has no level spikes on speech onsets", "[dsp][whisper]") {
+    vox::dsp::Whisper w;
+    w.prepare(kFs);
+    const auto phrase = vt::synthPhrase(120.0);
+    const auto out = vt::renderOffline(w, phrase.audio, 256);
+    // Noise has a higher crest factor than a vowel, so compare short-term
+    // loudness instead of peaks: no 10 ms window may be more than 12 dB
+    // louder than the input (no smeared tails after words).
+    const auto inLevels = windowedRms(phrase.audio, 480);
+    const auto outLevels = windowedRms(out, 480);
+    double worst = 0.0;
+    for (std::size_t i = 0; i < inLevels.size(); ++i) {
+        if (inLevels[i] > 0.01) {
+            worst = std::max(worst, outLevels[i] / inLevels[i]);
+        }
+    }
+    INFO("largest short-term level ratio " << worst);
+    CHECK(worst < 4.0);
+    CHECK(vt::peakAbs(out) < 2.0F);
 }
 
 TEST_CASE("Every ambience kind produces sound and stops when disabled", "[dsp][ambience]") {

@@ -46,6 +46,7 @@ void Equalizer::prepare(double sampleRate) {
 void Equalizer::reset() noexcept {
     for (BandState& b : bands_) {
         b.filter.reset();
+        b.second.reset();
     }
 }
 
@@ -69,9 +70,16 @@ void Equalizer::setEnabled(Band band, bool enabled) noexcept {
 }
 
 void Equalizer::updateCoefficients(BandState& band, std::size_t index) const noexcept {
-    band.filter.setCoefficients(
-        designBiquad(typeOf(index), sampleRate_, static_cast<double>(band.frequency.current()),
-                     static_cast<double>(band.q), static_cast<double>(band.gainDb.current())));
+    const auto hz = static_cast<double>(band.frequency.current());
+    if (index == LowCut || index == HighCut) {
+        // Fourth-order Butterworth as two sections with Q 0.5412 and 1.3066.
+        band.filter.setCoefficients(designBiquad(typeOf(index), sampleRate_, hz, 0.54119610));
+        band.second.setCoefficients(designBiquad(typeOf(index), sampleRate_, hz, 1.30656296));
+    } else {
+        band.filter.setCoefficients(designBiquad(typeOf(index), sampleRate_, hz,
+                                                 static_cast<double>(band.q),
+                                                 static_cast<double>(band.gainDb.current())));
+    }
     band.dirty = band.frequency.isSmoothing() || band.gainDb.isSmoothing();
 }
 
@@ -94,6 +102,9 @@ void Equalizer::process(std::span<float> block) noexcept {
                 std::abs(b.gainDb.current()) < 1.0e-3F && !b.dirty;
             if (!neutral) {
                 b.filter.process(chunk);
+                if (i == LowCut || i == HighCut) {
+                    b.second.process(chunk);
+                }
             }
         }
     }
@@ -101,9 +112,13 @@ void Equalizer::process(std::span<float> block) noexcept {
 
 double Equalizer::magnitudeDb(double hz) const noexcept {
     double total = 0.0;
-    for (const BandState& b : bands_) {
+    for (std::size_t i = 0; i < BandCount; ++i) {
+        const BandState& b = bands_[i];
         if (b.enabled) {
             total += biquadMagnitudeDb(b.filter.coefficients(), sampleRate_, hz);
+            if (i == LowCut || i == HighCut) {
+                total += biquadMagnitudeDb(b.second.coefficients(), sampleRate_, hz);
+            }
         }
     }
     return total;

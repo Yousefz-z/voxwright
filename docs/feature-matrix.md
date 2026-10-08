@@ -28,7 +28,7 @@ Module names refer to the layout in [architecture.md](architecture.md):
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
-| Large catalog of ready-made voices (vendor claims 100 to 200+), grouped by theme (characters, creatures, devices, environments, gender/age, robots) | M | 44 original voices shipped as JSON presets in `plugins/voices/`, each a layered chain of effect blocks from the registry. Categories: Character, Creature, Machine, Device, Space, Environment, Pitch & Gender, Musical, Utility. Target of 40+ distinct voices, each verified offline by pitch, spectral centroid, and loudness measurements. |
+| Large catalog of ready-made voices (vendor claims 100 to 200+), grouped by theme (characters, creatures, devices, environments, gender/age, robots) | M | 54 original voices shipped as JSON presets in `plugins/voices/`, each a layered chain of effect blocks from the registry. Categories: Natural, Character, Creature, Machine, Device, Space, Place, Musical, Utility. Each is verified offline by pitch, loudness, latency, spectral, and distinctness measurements ([voices.md](voices.md)). |
 | Live switching between voices with no dropout | M | Engine builds the new chain off the audio thread, hands it over through a lock-free mailbox, and crossfades old and new chains over 20 ms. |
 | Per-voice quick sliders (pitch, bass, treble, "space"/reverb, background level) | M | Each preset declares 2 to 4 macro sliders that map to one or more block parameters with linear, exponential, or dB curves. Values persist per voice. |
 | Voice changer master on/off | M | Engine bypass with a click-free crossfade; bound to a system hotkey and the tray menu. |

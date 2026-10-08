@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "id": "swamp-ogre",
+  "name": "Swamp Ogre",
+  "category": "Creature",
+  "description": "A grumbling ogre from a damp cave.",
+  "icon": "creature",
+  "color": "#8E5DB8",
+  "tags": [
+    "monster",
+    "deep"
+  ],
+  "outputGainDb": -0.6,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -8,
+        "formant": -6
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Tube",
+        "drive": 14.0,
+        "mix": 0.4,
+        "output": -4.0,
+        "tone": 5000.0
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.55,
+        "decay": 1.6,
+        "damping": 3000.0,
+        "mix": 0.2
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Cave drips",
+        "level": -34.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "size",
+      "name": "Size",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "semitones",
+          "from": -4,
+          "to": -12,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "grit",
+      "name": "Grit",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 0.8,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Background",
+      "default": 0.65,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -20,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": -8
+  }
+}

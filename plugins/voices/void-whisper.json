@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "id": "void-whisper",
+  "name": "Void Whisper",
+  "category": "Space",
+  "description": "A deep whisper from the emptiness between stars.",
+  "icon": "space",
+  "color": "#3D5A80",
+  "tags": [
+    "whisper",
+    "cosmic"
+  ],
+  "outputGainDb": 0.3,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -7,
+        "formant": -3
+      }
+    },
+    {
+      "effect": "whisper",
+      "params": {
+        "mix": 0.85
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 1.0,
+        "decay": 5.0,
+        "mix": 0.45
+      }
+    },
+    {
+      "effect": "echo",
+      "params": {
+        "time": 400.0,
+        "feedback": 0.35,
+        "mix": 0.2
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "void",
+      "name": "Void",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 2,
+          "param": "mix",
+          "from": 0.1,
+          "to": 0.8,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "unpitched": true
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "id": "hive-swarm",
+  "name": "Hive Swarm",
+  "category": "Creature",
+  "description": "Many tiny voices buzzing as one.",
+  "icon": "creature",
+  "color": "#8E5DB8",
+  "tags": [
+    "insect"
+  ],
+  "outputGainDb": 6.6,
+  "blocks": [
+    {
+      "effect": "harmonizer",
+      "params": {
+        "dry": -4.0,
+        "interval1": 12.0,
+        "level1": -6.0,
+        "interval2": 7.0,
+        "level2": -8.0,
+        "interval3": -5.0,
+        "level3": -8.0,
+        "detune": 30.0
+      }
+    },
+    {
+      "effect": "tremolo",
+      "params": {
+        "rate": 22.0,
+        "depth": 0.6,
+        "shape": "Square"
+      }
+    },
+    {
+      "effect": "ringmod",
+      "params": {
+        "frequency": 120.0,
+        "mix": 0.3
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "buzz",
+      "name": "Buzz",
+      "default": 0.6,
+      "targets": [
+        {
+          "block": 1,
+          "param": "depth",
+          "from": 0,
+          "to": 1,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "swarm",
+      "name": "Swarm",
+      "default": 0.6,
+      "targets": [
+        {
+          "block": 0,
+          "param": "detune",
+          "from": 0,
+          "to": 50,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

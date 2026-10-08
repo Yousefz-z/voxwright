@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "id": "pond-critter",
+  "name": "Pond Critter",
+  "category": "Creature",
+  "description": "A croaky, resonant swamp frog.",
+  "icon": "creature",
+  "color": "#8E5DB8",
+  "tags": [
+    "frog",
+    "funny"
+  ],
+  "outputGainDb": 6.0,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": 2,
+        "formant": -3
+      }
+    },
+    {
+      "effect": "ringmod",
+      "params": {
+        "frequency": 32.0,
+        "mix": 0.5
+      }
+    },
+    {
+      "effect": "filter",
+      "params": {
+        "mode": "Band-pass",
+        "cutoff": 750.0,
+        "resonance": 3.0,
+        "mix": 0.8
+      }
+    },
+    {
+      "effect": "tremolo",
+      "params": {
+        "rate": 11.0,
+        "depth": 0.35
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "croak",
+      "name": "Croak",
+      "default": 0.5556,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 0.9,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

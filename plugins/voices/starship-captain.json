@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "id": "starship-captain",
+  "name": "Starship Captain",
+  "category": "Space",
+  "description": "Commanding bridge voice inside a helmet.",
+  "icon": "space",
+  "color": "#3D5A80",
+  "tags": [
+    "scifi"
+  ],
+  "outputGainDb": 4.6,
+  "blocks": [
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -24.0,
+        "ratio": 4.0,
+        "makeup": 5.0
+      }
+    },
+    {
+      "effect": "comb",
+      "params": {
+        "frequency": 900.0,
+        "feedback": 0.3,
+        "mix": 0.15
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "mid3Db": 3.0,
+        "mid3Hz": 3000.0,
+        "lowCut": true,
+        "lowCutHz": 120.0
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Space drone",
+        "level": -34.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "helmet",
+      "name": "Helmet",
+      "default": 0.3,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 0.5,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Background",
+      "default": 0.65,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -20,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "radio-host",
+  "name": "Radio Host",
+  "category": "Utility",
+  "description": "Broadcast polish: close-mic warmth and steady loudness.",
+  "icon": "utility",
+  "color": "#7D8597",
+  "tags": [
+    "broadcast",
+    "clean"
+  ],
+  "outputGainDb": 7.4,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 60.0,
+        "lowShelfDb": 7.0,
+        "lowShelfHz": 140.0,
+        "mid1Db": -2.0,
+        "mid1Hz": 450.0,
+        "highShelfDb": 3.0
+      }
+    },
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -30.0,
+        "ratio": 5.0,
+        "makeup": 7.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "warmth",
+      "name": "Warmth",
+      "default": 0.875,
+      "targets": [
+        {
+          "block": 0,
+          "param": "lowShelfDb",
+          "from": 0,
+          "to": 8,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 0,
+    "maxLatencyMs": 1.0
+  }
+}

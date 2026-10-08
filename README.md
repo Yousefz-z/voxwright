@@ -12,7 +12,7 @@ Development happens in milestones; each one is a commit.
 | Milestone | Contents | State |
 |---|---|---|
 | 1 | C++20 DSP core, test-only offline render path, measurements | Done |
-| 2 | Effect registry and 40+ voice presets | Planned |
+| 2 | Effect registry (21 blocks) and 54 voice presets, each measured | Done |
 | 3 | Real-time engine, device routing, monitor, gate, noise reduction, push-to-talk | Planned |
 | 4 | Qt Quick app shell with device selection and live voice switching | Planned |
 | 5 | Soundboard with global hotkeys | Planned |
@@ -24,6 +24,7 @@ Development happens in milestones; each one is a commit.
 
 * [Feature matrix](docs/feature-matrix.md): every feature, its priority, and how it is built.
 * [Architecture](docs/architecture.md): layers, threads, signal flow, and the measurements behind each choice.
+* [Voices](docs/voices.md): the voice catalogue, how each voice was measured and tuned, and spectrograms.
 * [Decisions](docs/decisions.md): scope decisions that must not be undone silently.
 * [Contributing](CONTRIBUTING.md): toolchain setup and the exact checks CI runs.
 

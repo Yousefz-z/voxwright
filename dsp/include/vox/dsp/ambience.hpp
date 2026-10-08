@@ -40,7 +40,11 @@ public:
     /// Brightness of the soundscape (low-pass cutoff).
     void setToneHz(float hz) noexcept;
     /// Global "background effects" switch; fades over 200 ms.
-    void setEnabled(bool enabled) noexcept { enabled_.setTarget(enabled ? 1.0F : 0.0F); }
+    /// May be called before prepare(); the state then applies without a fade.
+    void setEnabled(bool enabled) noexcept {
+        enabledFlag_ = enabled;
+        enabled_.setTarget(enabled ? 1.0F : 0.0F);
+    }
 
     void process(std::span<float> block) noexcept;
     /// Generates one sample of the soundscape (exposed for tests).
@@ -73,6 +77,7 @@ private:
     Biquad lowCut_;
     SmoothedValue level_;
     SmoothedValue enabled_;
+    bool enabledFlag_ = true;
     float envelope_ = 0.0F;
     float burst_ = 0.0F;
     int counter_ = 0;

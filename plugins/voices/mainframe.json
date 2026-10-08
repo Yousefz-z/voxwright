@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "id": "mainframe",
+  "name": "Mainframe",
+  "category": "Machine",
+  "description": "A vocoded computer that keeps your intonation.",
+  "icon": "machine",
+  "color": "#5C7CFA",
+  "tags": [
+    "robot",
+    "vocoder"
+  ],
+  "outputGainDb": -0.4,
+  "blocks": [
+    {
+      "effect": "vocoder",
+      "params": {
+        "bands": 24.0,
+        "carrier": "Saw",
+        "follow": true,
+        "interval": 0.0,
+        "sibilance": 0.3
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "register",
+      "name": "Register",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "interval",
+          "from": -12,
+          "to": 12,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "consonants",
+      "name": "Consonants",
+      "default": 0.375,
+      "targets": [
+        {
+          "block": 0,
+          "param": "sibilance",
+          "from": 0,
+          "to": 0.8,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 0
+  }
+}

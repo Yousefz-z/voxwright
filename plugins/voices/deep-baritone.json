@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "id": "deep-baritone",
+  "name": "Deep Baritone",
+  "category": "Natural",
+  "description": "A lower, fuller version of your own voice.",
+  "icon": "natural",
+  "color": "#4FB3BF",
+  "tags": [
+    "deep",
+    "male"
+  ],
+  "outputGainDb": 0.1,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": -5,
+        "formant": -2
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "lowShelfDb": 2.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "depth",
+      "name": "Depth",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "semitones",
+          "from": -1,
+          "to": -9,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "name": "Body",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "formant",
+          "from": 0,
+          "to": -4,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": -5
+  }
+}

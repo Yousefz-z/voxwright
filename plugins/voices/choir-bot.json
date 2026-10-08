@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "id": "choir-bot",
+  "name": "Choir Bot",
+  "category": "Machine",
+  "description": "A synth choir singing whatever you say on one chord.",
+  "icon": "machine",
+  "color": "#5C7CFA",
+  "tags": [
+    "vocoder",
+    "music"
+  ],
+  "outputGainDb": 2.6,
+  "blocks": [
+    {
+      "effect": "vocoder",
+      "params": {
+        "bands": 24.0,
+        "carrier": "Chord",
+        "follow": false,
+        "carrierHz": 147.0,
+        "sibilance": 0.25
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.8,
+        "decay": 2.5,
+        "mix": 0.25
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "chord",
+      "name": "Chord root",
+      "default": 0.5014,
+      "targets": [
+        {
+          "block": 0,
+          "param": "carrierHz",
+          "from": 98,
+          "to": 220,
+          "curve": "exponential"
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "name": "Space",
+      "default": 0.4167,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 0.6,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

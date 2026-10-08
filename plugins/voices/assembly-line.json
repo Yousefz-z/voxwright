@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "id": "assembly-line",
+  "name": "Assembly Line",
+  "category": "Machine",
+  "description": "Pitch snapped to semitones, 8-bit grit, and a factory sweep.",
+  "icon": "machine",
+  "color": "#5C7CFA",
+  "tags": [
+    "robot",
+    "tune"
+  ],
+  "outputGainDb": 2.5,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": 0,
+        "formant": 0,
+        "mode": "Tune",
+        "scale": "Chromatic",
+        "retune": 0.0
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Crush",
+        "bits": 8.0,
+        "downsample": 1.0,
+        "drive": 0.0,
+        "output": -2.0,
+        "mix": 0.6
+      }
+    },
+    {
+      "effect": "flanger",
+      "params": {
+        "rate": 0.3,
+        "feedback": 0.6,
+        "mix": 0.4
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "crunch",
+      "name": "Crunch",
+      "default": 0.6,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 1,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "sweep",
+      "name": "Sweep",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 2,
+          "param": "mix",
+          "from": 0,
+          "to": 0.8,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

@@ -33,13 +33,15 @@ void Whisper::prepare(double sampleRate) {
                                             static_cast<float>(windowLength - 1));
     }
     frame_.assign(windowLength, 0.0F);
-    // Gaussian lag window (100 Hz bandwidth expansion): keeps the model's
+    // Gaussian lag window (200 Hz bandwidth expansion): keeps the model's
     // peaks finite so the reflection coefficients never approach +-1.
     for (int lag = 0; lag <= kOrder; ++lag) {
-        const double x = kTwoPiD * 100.0 * static_cast<double>(lag) / sampleRate;
+        const double x = kTwoPiD * 200.0 * static_cast<double>(lag) / sampleRate;
         lagWindow_[static_cast<std::size_t>(lag)] = std::exp(-0.5 * x * x);
     }
-    levelCoeff_ = onePoleCoefficient(40.0F, sampleRate);
+    levelCoeff_ = onePoleCoefficient(5.0F, sampleRate);
+    gainFallCoeff_ = onePoleCoefficient(1.0F, sampleRate);
+    gainRiseCoeff_ = onePoleCoefficient(15.0F, sampleRate);
     mix_.prepare(sampleRate, 30.0F);
     mix_.setImmediate(1.0F);
     reset();
@@ -138,14 +140,17 @@ void Whisper::process(std::span<float> block) noexcept {
         }
         lattice_[0] = f;
         deEmphasisState_ = f + kPreEmphasis * deEmphasisState_;
-        // Follow the input loudness: the all-pole model's power gain is only
-        // approximately right, so a slow level loop matches it exactly.
+        // Follow the input loudness with fast envelopes. The LPC window is 30 ms
+        // long, so its residual power lags word endings; matching short-term
+        // power instead stops the whisper as soon as the speaker stops.
         const float raw = deEmphasisState_;
         inputPower_ = sample * sample + levelCoeff_ * (inputPower_ - sample * sample);
         outputPower_ = raw * raw + levelCoeff_ * (outputPower_ - raw * raw);
-        const float wanted = outputPower_ > 1.0e-12F ? std::sqrt(inputPower_ / outputPower_) : 1.0F;
-        levelGain_ = std::clamp(wanted, 0.0F, 1000.0F) +
-                     0.999F * (levelGain_ - std::clamp(wanted, 0.0F, 1000.0F));
+        const float wanted = outputPower_ > 1.0e-14F ? std::sqrt(inputPower_ / outputPower_) : 0.0F;
+        const float bounded = std::clamp(wanted, 0.0F, 8.0F);
+        // Falls fast, rises slowly: onsets cannot overshoot into a puff.
+        const float coeff = bounded < levelGain_ ? gainFallCoeff_ : gainRiseCoeff_;
+        levelGain_ = bounded + coeff * (levelGain_ - bounded);
         const float wet = raw * levelGain_;
         const float m = mix_.next();
         sample = sample + m * (wet - sample);

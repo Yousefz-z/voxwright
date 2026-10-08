@@ -13,3 +13,8 @@ vox_target_defaults(vox_bench_pitch)
 add_executable(vox_bench_noise bench/noise_suppression.cpp)
 target_link_libraries(vox_bench_noise PRIVATE vox::dsp vox::testing)
 vox_target_defaults(vox_bench_noise)
+
+add_executable(vox_voice_report bench/voice_report.cpp ${PROJECT_SOURCE_DIR}/plugins/tests/voice_metrics.cpp)
+target_include_directories(vox_voice_report PRIVATE ${PROJECT_SOURCE_DIR}/plugins/tests)
+target_link_libraries(vox_voice_report PRIVATE vox::plugins vox::testing)
+vox_target_defaults(vox_voice_report)

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "id": "drive-thru",
+  "name": "Drive-Thru Speaker",
+  "category": "Device",
+  "description": "A crunchy, overdriven order-box speaker.",
+  "icon": "device",
+  "color": "#C9A227",
+  "tags": [
+    "lofi",
+    "funny"
+  ],
+  "outputGainDb": 7.7,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 600.0,
+        "highCut": true,
+        "highCutHz": 3000.0,
+        "midQ": 1.2,
+        "mid2Db": 5.0
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Crush",
+        "bits": 6.0,
+        "downsample": 4.0,
+        "drive": 4.0,
+        "output": -2.0,
+        "mix": 0.8
+      }
+    },
+    {
+      "effect": "compressor",
+      "params": {
+        "threshold": -22.0,
+        "ratio": 8.0,
+        "makeup": 4.0
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 500.0,
+        "highCut": true,
+        "highCutHz": 3500.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "crunch",
+      "name": "Crunch",
+      "default": 0.75,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0.2,
+          "to": 1,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

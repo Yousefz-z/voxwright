@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "id": "bright-alto",
+  "name": "Bright Alto",
+  "category": "Natural",
+  "description": "Higher pitch and a lighter vocal tract.",
+  "icon": "natural",
+  "color": "#4FB3BF",
+  "tags": [
+    "female",
+    "higher"
+  ],
+  "outputGainDb": 1.2,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "semitones": 5,
+        "formant": 3
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "highShelfDb": 2.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "height",
+      "name": "Height",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "semitones",
+          "from": 1,
+          "to": 9,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "lightness",
+      "name": "Lightness",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "formant",
+          "from": 0,
+          "to": 6,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "pitchShiftSemitones": 5
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "id": "old-computer",
+  "name": "Old Computer",
+  "category": "Machine",
+  "description": "A 1980s talking computer with a square-wave voice box.",
+  "icon": "machine",
+  "color": "#5C7CFA",
+  "tags": [
+    "retro",
+    "computer"
+  ],
+  "outputGainDb": -5.8,
+  "blocks": [
+    {
+      "effect": "vocoder",
+      "params": {
+        "bands": 16.0,
+        "carrier": "Square",
+        "follow": false,
+        "carrierHz": 220.0,
+        "sibilance": 0.2
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Crush",
+        "bits": 8.0,
+        "downsample": 2.0,
+        "drive": 0.0,
+        "output": 0.0,
+        "mix": 0.6
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Computer",
+        "level": -34.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "pitch",
+      "name": "Pitch",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "carrierHz",
+          "from": 110,
+          "to": 440,
+          "curve": "exponential"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Background",
+      "default": 0.65,
+      "targets": [
+        {
+          "block": 2,
+          "param": "level",
+          "from": -60,
+          "to": -20,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "fixedPitchHz": 220.0
+  }
+}

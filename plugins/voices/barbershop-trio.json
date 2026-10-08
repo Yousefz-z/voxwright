@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "id": "barbershop-trio",
+  "name": "Barbershop Trio",
+  "category": "Musical",
+  "description": "You plus a third and a fifth above.",
+  "icon": "musical",
+  "color": "#D65DB1",
+  "tags": [
+    "harmony",
+    "singing"
+  ],
+  "outputGainDb": -1.9,
+  "blocks": [
+    {
+      "effect": "harmonizer",
+      "params": {
+        "dry": 0.0,
+        "interval1": 4.0,
+        "level1": -4.0,
+        "interval2": 7.0,
+        "level2": -4.0,
+        "level3": -60.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "blend",
+      "name": "Blend",
+      "default": 0.8333,
+      "targets": [
+        {
+          "block": 0,
+          "param": "level1",
+          "from": -24,
+          "to": 0,
+          "curve": "linear"
+        },
+        {
+          "block": 0,
+          "param": "level2",
+          "from": -24,
+          "to": 0,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

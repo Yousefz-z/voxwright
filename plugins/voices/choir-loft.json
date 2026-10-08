@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "id": "choir-loft",
+  "name": "Choir Loft",
+  "category": "Musical",
+  "description": "A small choir around you in a stone hall.",
+  "icon": "musical",
+  "color": "#D65DB1",
+  "tags": [
+    "choir",
+    "singing"
+  ],
+  "outputGainDb": 0.5,
+  "blocks": [
+    {
+      "effect": "harmonizer",
+      "params": {
+        "dry": 0.0,
+        "interval1": 12.0,
+        "level1": -9.0,
+        "interval2": -12.0,
+        "level2": -9.0,
+        "interval3": 7.0,
+        "level3": -10.0,
+        "detune": 25.0
+      }
+    },
+    {
+      "effect": "chorus",
+      "params": {
+        "voices": 3.0,
+        "rate": 0.5,
+        "depth": 3.0,
+        "mix": 0.5
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 1.0,
+        "decay": 3.5,
+        "mix": 0.35
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "choir",
+      "name": "Choir",
+      "default": 0.7,
+      "targets": [
+        {
+          "block": 0,
+          "param": "level1",
+          "from": -30,
+          "to": 0,
+          "curve": "linear"
+        },
+        {
+          "block": 0,
+          "param": "level2",
+          "from": -30,
+          "to": 0,
+          "curve": "linear"
+        },
+        {
+          "block": 0,
+          "param": "level3",
+          "from": -30,
+          "to": 0,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "name": "Space",
+      "default": 0.4167,
+      "targets": [
+        {
+          "block": 2,
+          "param": "mix",
+          "from": 0.1,
+          "to": 0.7,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

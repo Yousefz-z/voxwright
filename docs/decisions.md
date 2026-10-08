@@ -127,3 +127,19 @@ installers.
 private members with a trailing underscore, constants `kPascalCase`,
 namespaces lowercase, files `snake_case`. Enforced by clang-format and
 clang-tidy (`readability-identifier-naming`).
+
+## D16. Voices are tuned by measurement on synthetic speech
+
+*2026-10-08.* The development environment has no speakers or microphone,
+so voices are tuned and verified by measurement (pitch, loudness, latency,
+spectral features, spectrograms) on a synthetic speech phrase with known
+pitch and formants, not by listening. No third-party speech recordings are
+committed. Listening checks on real voices are part of
+[manual-test-checklist.md](manual-test-checklist.md).
+
+## D17. Cut filters are 24 dB per octave
+
+*2026-10-08.* The equalizer's low and high cuts are fourth-order
+Butterworth. Twelve dB per octave left audible energy outside the band of
+the device voices after clipping and rate reduction (found on the
+spectrogram sheet).

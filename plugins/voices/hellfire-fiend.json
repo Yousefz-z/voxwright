@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "id": "hellfire-fiend",
+  "name": "Hellfire Fiend",
+  "category": "Creature",
+  "description": "A layered, rasping voice with a crackling fire.",
+  "icon": "creature",
+  "color": "#8E5DB8",
+  "tags": [
+    "demonic",
+    "deep"
+  ],
+  "outputGainDb": 2.5,
+  "blocks": [
+    {
+      "effect": "harmonizer",
+      "params": {
+        "dry": -60.0,
+        "interval1": -9.0,
+        "level1": 0.0,
+        "interval2": -21.0,
+        "level2": -5.0,
+        "level3": -60.0,
+        "formant": -5.0
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Rectify",
+        "drive": 16.0,
+        "mix": 0.35,
+        "output": -6.0,
+        "tone": 6000.0
+      }
+    },
+    {
+      "effect": "reverb",
+      "params": {
+        "size": 0.7,
+        "decay": 2.2,
+        "mix": 0.2
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Fire",
+        "level": -30.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "depth",
+      "name": "Depth",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "interval1",
+          "from": -5,
+          "to": -13,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "layer",
+      "name": "Under-voice",
+      "default": 0.8333,
+      "targets": [
+        {
+          "block": 0,
+          "param": "level2",
+          "from": -30,
+          "to": 0,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Background",
+      "default": 0.7143,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -18,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}

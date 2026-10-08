@@ -13,10 +13,15 @@ if(MSVC)
 else()
     target_compile_options(vox_compiler_options INTERFACE
         -Wall -Wextra -Wpedantic -Wshadow -Wnon-virtual-dtor -Wcast-align
-        -Wunused -Woverloaded-virtual -Wnull-dereference -Wdouble-promotion
+        -Wunused -Woverloaded-virtual -Wdouble-promotion
         -Wformat=2 -Wimplicit-fallthrough -Wconversion
         $<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>
         $<$<BOOL:${VOX_WARNINGS_AS_ERRORS}>:-Werror>)
+    # GCC's -Wnull-dereference reports false positives on std::vector
+    # indexing at -O2, so it is enabled for Clang only.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(vox_compiler_options INTERFACE -Wnull-dereference)
+    endif()
 endif()
 
 # Real-time DSP must not hit denormal slowdowns; the engine also sets FTZ/DAZ

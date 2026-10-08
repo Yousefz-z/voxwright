@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "id": "gramophone",
+  "name": "Gramophone",
+  "category": "Device",
+  "description": "A wobbly shellac record from a horn speaker.",
+  "icon": "device",
+  "color": "#C9A227",
+  "tags": [
+    "vintage"
+  ],
+  "outputGainDb": 6.3,
+  "blocks": [
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 400.0,
+        "highCut": true,
+        "highCutHz": 4000.0,
+        "mid2Db": 4.0
+      }
+    },
+    {
+      "effect": "vibrato",
+      "params": {
+        "rate": 0.7,
+        "depth": 18.0
+      }
+    },
+    {
+      "effect": "distortion",
+      "params": {
+        "mode": "Tube",
+        "drive": 10.0,
+        "mix": 0.4,
+        "output": -3.0
+      }
+    },
+    {
+      "effect": "ambience",
+      "params": {
+        "kind": "Radio static",
+        "level": -42.0,
+        "tone": 5000.0
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 350.0,
+        "highCut": true,
+        "highCutHz": 4500.0
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "wow",
+      "name": "Wobble",
+      "default": 0.45,
+      "targets": [
+        {
+          "block": 1,
+          "param": "depth",
+          "from": 0,
+          "to": 40,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "name": "Surface noise",
+      "default": 0.5625,
+      "targets": [
+        {
+          "block": 3,
+          "param": "level",
+          "from": -60,
+          "to": -28,
+          "curve": "linear"
+        }
+      ]
+    }
+  ]
+}
