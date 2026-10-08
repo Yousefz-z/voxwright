@@ -222,20 +222,24 @@ Item {
 
             Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
 
+            // The model is the count, not the list: the list is new on every
+            // change, and a new model rebuilds the slider being dragged.
             Repeater {
-                model: page.voices.macros
+                model: page.voices.macros.length
                 LabeledSlider {
-                    required property var modelData
                     required property int index
-                    label: modelData.name
+                    readonly property var macro: page.voices.macros[index]
+                    objectName: "voiceMacro" + index
+                    label: macro ? macro.name : ""
                     from: 0
                     to: 1
-                    value: modelData.value
+                    value: macro ? macro.value : 0
                     formatValue: v => Math.round(v * 100) + " %"
                     onMoved: v => page.voices.setMacro(index, v)
                 }
             }
             LabeledSlider {
+                objectName: "voiceBass"
                 label: qsTr("Bass")
                 from: -12
                 to: 12

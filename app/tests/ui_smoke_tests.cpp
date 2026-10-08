@@ -11,6 +11,7 @@
 
 #include <QDir>
 #include <QImage>
+#include <QPointer>
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -132,6 +133,49 @@ void click(QQuickWindow* window, QQuickItem* item) {
     // after the wait below.
     static_cast<void>(window->grabWindow());
     QTest::qWait(60);
+}
+
+/// The first visible, enabled item whose objectName starts with `prefix`.
+QQuickItem* findUsable(QQuickItem* root, const QString& prefix) {
+    if (root->objectName().startsWith(prefix) && root->isVisible() && root->isEnabled()) {
+        return root;
+    }
+    for (QQuickItem* child : root->childItems()) {
+        if (QQuickItem* found = findUsable(child, prefix)) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
+/// The Slider in a LabeledSlider.
+QQuickItem* sliderIn(QQuickItem* root) {
+    if (root == nullptr || root->inherits("QQuickSlider")) {
+        return root;
+    }
+    for (QQuickItem* child : root->childItems()) {
+        if (QQuickItem* found = sliderIn(child)) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
+/// Presses on a slider's track at `from`, moves to `to` in small steps, and
+/// releases, as a hand drags it. Positions are fractions of its width.
+void drag(QQuickWindow* window, QQuickItem* slider, double from, double to) {
+    scrollIntoView(slider);
+    const double y = slider->height() / 2;
+    const QPointF start = slider->mapToScene(QPointF(slider->width() * from, y));
+    const QPointF end = slider->mapToScene(QPointF(slider->width() * to, y));
+    QTest::mousePress(window, Qt::LeftButton, {}, start.toPoint());
+    constexpr int kSteps = 12;
+    for (int i = 1; i <= kSteps; ++i) {
+        QTest::mouseMove(window, (start + (end - start) * i / kSteps).toPoint());
+        QTest::qWait(10);
+    }
+    QTest::mouseRelease(window, Qt::LeftButton, {}, end.toPoint());
+    QTest::qWait(30);
 }
 
 } // namespace
@@ -324,6 +368,47 @@ TEST_CASE("Without notifications the page gets all the height above the bottom b
     CHECK_FALSE(banners->isVisible());
     CHECK(pages->y() < 1.0);
     CHECK(pages->height() > bottomBar->y() - 1.0);
+
+    INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
+    CHECK(collector.warnings().isEmpty());
+}
+
+TEST_CASE("Sliders follow a drag, not only a click", "[app][ui]") {
+    const WarningCollector collector;
+    TestApp t;
+    auto& ctx = t.context();
+    REQUIRE_FALSE(ctx.voices()->macros().isEmpty());
+    QQmlApplicationEngine qml;
+    qml.setInitialProperties({{QStringLiteral("app"), QVariant::fromValue(&ctx)}});
+    qml.loadFromModule(QStringLiteral("Voxwright"), QStringLiteral("Main"));
+    REQUIRE(qml.rootObjects().size() == 1);
+    auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().front());
+    REQUIRE(window != nullptr);
+    window->resize(1280, 820);
+    window->show();
+    REQUIRE(QTest::qWaitForWindowExposed(window));
+
+    // A quick slider of the current voice: every step of the drag changes the
+    // voice's quick sliders, which must not rebuild the one being dragged.
+    auto* macro = sliderIn(findItem(window, QStringLiteral("voiceMacro0")));
+    REQUIRE(macro != nullptr);
+    drag(window, macro, 0.15, 0.85);
+    CHECK(ctx.voices()->macros().front().toMap().value(QStringLiteral("value")).toDouble() > 0.6);
+    auto* bass = sliderIn(findItem(window, QStringLiteral("voiceBass")));
+    REQUIRE(bass != nullptr);
+    drag(window, bass, 0.15, 0.85);
+    CHECK(ctx.voices()->bassDb() > 4.0);
+
+    // A setting in the voice designer.
+    click(window, findItem(window, QStringLiteral("customizeVoice")));
+    REQUIRE(ctx.designer()->editing());
+    QQuickItem* param = findUsable(window->contentItem(), QStringLiteral("param_"));
+    REQUIRE(param != nullptr);
+    const QPointer<QQuickItem> setting = sliderIn(param);
+    REQUIRE_FALSE(setting.isNull());
+    drag(window, setting, 0.15, 0.85);
+    REQUIRE_FALSE(setting.isNull());
+    CHECK(setting->property("value").toDouble() > 0.6);
 
     INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
     CHECK(collector.warnings().isEmpty());
