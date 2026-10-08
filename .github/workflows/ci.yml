@@ -178,7 +178,8 @@ jobs:
       - name: Test
         run: ctest --preset windows
       - name: Install into a staging folder (deploys the Qt runtime)
-        run: cmake --install build/windows --prefix stage
+        # Qt's deploy step writes qt.conf only under an absolute prefix.
+        run: cmake --install build/windows --prefix "${{ github.workspace }}/stage"
       - name: Build the installer (Inno Setup)
         shell: pwsh
         run: |
