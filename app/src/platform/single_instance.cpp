@@ -11,15 +11,22 @@
 #endif
 
 namespace vox::app {
+namespace {
+
+/// A lock left by a process that is gone is taken over (QLockFile checks the
+/// process); a running instance holds it however long it runs.
+bool takeLock(QLockFile& lock) {
+    lock.setStaleLockTime(0);
+    return lock.tryLock(0);
+}
+
+} // namespace
 
 SingleInstance::SingleInstance(const QString& key, QObject* parent)
     : QObject(parent)
     , key_(key)
-    , lock_(QDir::temp().filePath(key + QStringLiteral(".lock"))) {
-    // A lock left by a process that is gone is taken over (QLockFile checks
-    // the process); a running instance holds it however long it runs.
-    lock_.setStaleLockTime(0);
-    primary_ = lock_.tryLock(0);
+    , lock_(QDir::temp().filePath(key + QStringLiteral(".lock")))
+    , primary_(takeLock(lock_)) {
     if (!primary_) {
         return;
     }
