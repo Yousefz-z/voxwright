@@ -281,6 +281,23 @@ Item {
                         Layout.fillWidth: true
                         Text {
                             Layout.fillWidth: true
+                            text: qsTr("Processing load")
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontSmall
+                            color: Theme.textSecondary
+                        }
+                        Text {
+                            objectName: "processingLoad"
+                            text: page.audio.running ? Math.round(page.audio.processingLoad * 100) + " %" : "-"
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontSmall
+                            color: page.audio.processingLoad > 0.5 ? Theme.warning : Theme.textMuted
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                            Layout.fillWidth: true
                             text: qsTr("Buffer size")
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontBody

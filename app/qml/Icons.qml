@@ -41,6 +41,11 @@ QtObject {
         "edit": "M4 20 h4 l11 -11 l-4 -4 l-11 11 Z M13.5 6.5 l4 4",
         "stop": "M7 7 h10 v10 h-10 Z",
         "trash": "M4 7 h16 M9 7 v-3 h6 v3 M6 7 l1 13 h10 l1 -13 M10 11 v6 M14 11 v6",
+        "up": "M12 19 V5 M6 11 l6 -6 l6 6",
+        "down": "M12 5 v14 M6 13 l6 6 l6 -6",
+        "export": "M12 15 V3 M7 8 l5 -5 l5 5 M4 17 v3 h16 v-3",
+        "sliders": "M4 6 h16 M4 12 h16 M4 18 h16 M9 4 v4 M15 10 v4 M7 16 v4",
+        "designer": "M9 3 h6 M10 3 v6 l-5.5 9.5 a1.5 1.5 0 0 0 1.3 2.5 h10.4 a1.5 1.5 0 0 0 1.3 -2.5 L14 9 V3 M7.6 14 h8.8",
         "import": "M12 3 v12 M7 10 l5 5 l5 -5 M4 17 v3 h16 v-3",
         "mic-off": "M12 3 a3 3 0 0 1 3 3 v5.5 a3 3 0 0 1 -6 0 v-5.5 a3 3 0 0 1 3 -3 Z M5.5 11 a6.5 6.5 0 0 0 13 0 M12 17.5 v3.5 M9 21 h6 M4 4 l16 16",
         // Built-in sounds.

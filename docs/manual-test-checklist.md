@@ -69,6 +69,16 @@ simulated key presses.
 | S4 | Both | Hold a "Play while held" sound's hotkey for two seconds while in a game. | It plays while held and stops on release without a click. | | | |
 | S5 | Both | Quit with sounds and boards changed, start again; then corrupt `soundboards.json`. | Boards, sounds, and hotkeys come back. With the damaged file, a banner explains it and the default boards appear. | | | |
 
+## Voice designer (milestone 6)
+
+| # | Platform | Steps | Expected | Date | Tester | Result |
+|---|---|---|---|---|---|---|
+| D1 | Both | With a real microphone and headphones, build a voice while speaking: drag pitch, formant, and filter settings quickly, add and remove effects, and move one up and down. | Every change is heard at once. No clicks, pops, or dropouts while dragging or rearranging. | | | |
+| D2 | Both | Save a voice, quit, start again, and switch to it with its hotkey while a game has focus. | The voice is in "My voices" and sounds the same as when it was saved. | | | |
+| D3 | Both | Export a voice on Windows and import the file on macOS (and the other way). | The imported voice sounds the same. | | | |
+| D4 | Both | On the slowest supported machine, build a voice with 12 effects including the vocoder, harmonizer, and reverb, with noise reduction on. | The processing load readout stays under 30 % and the audio has no dropouts. | | | |
+| D5 | Both | Use the designer with the keyboard only, then with Narrator or VoiceOver. | Every effect, setting, and button can be reached and is announced by name. | | | |
+
 ## Voices (milestone 2)
 
 | # | Platform | Steps | Expected | Date | Tester | Result |

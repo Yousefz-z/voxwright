@@ -5,9 +5,12 @@
 #include <vox/devices/fake_backend.hpp>
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QElapsedTimer>
 #include <QEventLoop>
 #include <QFile>
+#include <QFileInfo>
+#include <QHash>
 #include <QTemporaryDir>
 
 #include <memory>
@@ -29,7 +32,9 @@ public:
     TestApp()
         : TestApp(Devices{.cable = true}) {}
 
-    explicit TestApp(Devices devices, const QString& settingsJson = {}) {
+    /// `files` are written into the data folder first (path relative to it).
+    explicit TestApp(Devices devices, const QString& settingsJson = {},
+                     const QHash<QString, QByteArray>& files = {}) {
         auto backend = std::make_unique<devices::FakeBackend>();
         backend->setTime(0.0);
         backend->addDevice(
@@ -44,6 +49,14 @@ public:
             QFile file(settingsPath());
             if (file.open(QIODevice::WriteOnly)) {
                 file.write(settingsJson.toUtf8());
+            }
+        }
+        for (auto it = files.cbegin(); it != files.cend(); ++it) {
+            const QString path = dir_.filePath(it.key());
+            QDir().mkpath(QFileInfo(path).absolutePath());
+            QFile file(path);
+            if (file.open(QIODevice::WriteOnly)) {
+                file.write(it.value());
             }
         }
         auto hotkeys = std::make_unique<ManualHotkeys>(true);
@@ -78,6 +91,18 @@ public:
     /// Runs the devices in lock-step for `seconds` of simulated time, feeding
     /// `input` (looped) to the microphone, then lets the controllers poll.
     void pump(double seconds, const std::vector<float>& input = {}) {
+        run(seconds, input, nullptr);
+    }
+
+    /// Like pump(), returning what reached the virtual cable (left channel).
+    std::vector<float> record(double seconds, const std::vector<float>& input) {
+        std::vector<float> out;
+        run(seconds, input, &out);
+        return out;
+    }
+
+private:
+    void run(double seconds, const std::vector<float>& input, std::vector<float>* cable) {
         constexpr std::size_t kBlock = 128;
         std::vector<float> mono(kBlock, 0.0F);
         const auto blocks = static_cast<std::size_t>(seconds * 48000.0 / kBlock);
@@ -88,7 +113,13 @@ public:
             }
             position_ += kBlock;
             static_cast<void>(backend_->pumpCapture("mic", mono));
-            static_cast<void>(backend_->pumpPlayback("cable", kBlock));
+            const auto played = backend_->pumpPlayback("cable", kBlock);
+            if (cable != nullptr && played.has_value()) {
+                const std::vector<float>& frames = played.value();
+                for (std::size_t i = 0; i < frames.size(); i += 2) {
+                    cable->push_back(frames[i]);
+                }
+            }
             static_cast<void>(backend_->pumpPlayback("phones", kBlock));
             time_ += static_cast<double>(kBlock) / 48000.0;
             if (b % 64 == 0) {
@@ -99,7 +130,6 @@ public:
         QCoreApplication::processEvents();
     }
 
-private:
     QTemporaryDir dir_;
     devices::FakeBackend* backend_ = nullptr;
     ManualHotkeys* hotkeys_ = nullptr;

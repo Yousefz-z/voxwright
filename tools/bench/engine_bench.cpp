@@ -6,6 +6,7 @@
 
 #include <vox/devices/fake_backend.hpp>
 #include <vox/engine/audio_engine.hpp>
+#include <vox/plugins/voice_edit.hpp>
 #include <vox/plugins/voice_library.hpp>
 #include <vox/testing/analysis.hpp>
 #include <vox/testing/signals.hpp>
@@ -73,7 +74,23 @@ struct Rig {
     DeviceSelection selection;
 };
 
-void blockCost(const std::vector<vox::plugins::VoicePreset>& voices) {
+/// The largest voice the designer allows, built from the most expensive
+/// effects (vox::plugins::kMaxVoiceBlocks of them).
+vox::plugins::VoicePreset designerMaximum() {
+    vox::plugins::VoicePreset v;
+    v.id = "custom-bench";
+    v.name = "Designer maximum";
+    v.category = "Character";
+    const auto& registry = vox::plugins::EffectRegistry::builtin();
+    for (const char* effect : {"pitch", "harmonizer", "vocoder", "reverb", "whisper", "chorus",
+                               "flanger", "phaser", "echo", "distortion", "filter", "comb"}) {
+        static_cast<void>(vox::plugins::insertBlock(v, v.blocks.size(), effect, registry));
+    }
+    return v;
+}
+
+void blockCost(std::vector<vox::plugins::VoicePreset> voices) {
+    voices.push_back(designerMaximum());
     std::printf("### Processing cost per 128-frame block (2.67 ms of audio)\n\n");
     std::printf("| Configuration | Mean (%% of block) | 99th percentile (%% of block) | Worst "
                 "(%% of block) |\n|---|---|---|---|\n");
@@ -84,12 +101,14 @@ void blockCost(const std::vector<vox::plugins::VoicePreset>& voices) {
         bool suppression;
     };
     const auto& registry = vox::plugins::EffectRegistry::builtin();
-    for (const Scenario sc : {Scenario{"No voice", nullptr, false},
-                              Scenario{"No voice, noise reduction on", nullptr, true},
-                              Scenario{"Clean Voice", "clean-voice", false},
-                              Scenario{"Deep Baritone (PSOLA)", "deep-baritone", true},
-                              Scenario{"Choir Bot (vocoder + harmonizer)", "choir-bot", true},
-                              Scenario{"Cathedral (reverb)", "cathedral", true}}) {
+    for (const Scenario sc :
+         {Scenario{"No voice", nullptr, false},
+          Scenario{"No voice, noise reduction on", nullptr, true},
+          Scenario{"Clean Voice", "clean-voice", false},
+          Scenario{"Deep Baritone (PSOLA)", "deep-baritone", true},
+          Scenario{"Choir Bot (vocoder + harmonizer)", "choir-bot", true},
+          Scenario{"Cathedral (reverb)", "cathedral", true},
+          Scenario{"Designer maximum (12 heavy effects)", "custom-bench", true}}) {
         vox::engine::ProcessingGraph graph(EngineConfig{});
         if (sc.voice != nullptr) {
             const auto* preset = findVoice(voices, sc.voice);

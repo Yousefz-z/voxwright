@@ -14,6 +14,12 @@
 
 namespace vox::plugins {
 
+/// Most effect blocks a voice may hold. Bounds the processing cost of a
+/// voice built in the designer or imported from a file.
+inline constexpr std::size_t kMaxVoiceBlocks = 12;
+/// Most quick sliders (macros) a voice may have.
+inline constexpr std::size_t kMaxVoiceMacros = 4;
+
 /// One effect block in a voice: effect id plus parameter values by id.
 /// Parameters not listed keep the effect's defaults.
 struct BlockSpec {

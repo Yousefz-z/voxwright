@@ -72,6 +72,13 @@ Item {
                     selected: page.voices.voices.category === "favorites"
                     onClicked: page.voices.voices.category = "favorites"
                 }
+                CategoryChip {
+                    objectName: "mineChip"
+                    visible: page.voices.customCount > 0
+                    text: qsTr("My voices")
+                    selected: page.voices.voices.category === "mine"
+                    onClicked: page.voices.voices.category = "mine"
+                }
                 Repeater {
                     model: page.voices.categories
                     CategoryChip {
@@ -258,6 +265,17 @@ Item {
             }
 
             Item { Layout.fillHeight: true }
+
+            PageButton {
+                objectName: "customizeVoice"
+                Layout.fillWidth: true
+                text: page.voices.currentCustom ? qsTr("Edit in the designer") : qsTr("Customize a copy")
+                iconName: page.voices.currentCustom ? "edit" : "designer"
+                onClicked: {
+                    page.app.designer.editVoice(page.voices.currentVoiceId)
+                    page.app.runAction("open-designer")
+                }
+            }
 
             Button {
                 id: resetButton

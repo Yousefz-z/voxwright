@@ -22,7 +22,9 @@ QString inDir(const QString& dir, const QString& fallback, const QString& name) 
 AppContext::AppContext(Options options, QObject* parent)
     : QObject(parent)
     , store_(inDir(options.dataDir, SettingsStore::defaultPath(), QStringLiteral("settings.json")))
-    , backend_(std::move(options.backend)) {
+    , backend_(std::move(options.backend))
+    , voiceStore_(
+          inDir(options.dataDir, CustomVoiceStore::defaultDirectory(), QStringLiteral("voices"))) {
     auto loaded = store_.load();
     settings_ = loaded.settings;
     if (options.backendError) {
@@ -47,6 +49,15 @@ AppContext::AppContext(Options options, QObject* parent)
         notifications_.post(QStringLiteral("voices"), NotificationModel::Level::Error,
                             tr("Voices could not be loaded"),
                             QString::fromStdString(voices.error().message));
+    }
+    auto custom = voiceStore_.load(registry);
+    for (auto& voice : custom.voices) {
+        presets_.push_back(std::move(voice));
+    }
+    if (!custom.problems.isEmpty()) {
+        notifications_.post(QStringLiteral("custom-voices"), NotificationModel::Level::Warning,
+                            tr("Some of your voices could not be loaded"),
+                            custom.problems.join(QLatin1Char('\n')));
     }
 
     audio_ = std::make_unique<AudioController>(*engine_, settings_, notifications_);
@@ -74,6 +85,9 @@ AppContext::AppContext(Options options, QObject* parent)
             &AppContext::runHotkeyAction);
     connect(hotkeyController_.get(), &HotkeyController::voiceTriggered, voices_.get(),
             &VoiceController::selectVoice);
+    connect(
+        voices_.get(), &VoiceController::voiceRemoved, hotkeyController_.get(),
+        [this](const QString& id) { static_cast<void>(hotkeyController_->assignVoice(id, {})); });
     hotkeyController_->setVoiceNamer([this](const QString& id) {
         const auto found = std::ranges::find_if(
             presets_, [&](const plugins::VoicePreset& p) { return p.id == id.toStdString(); });
@@ -89,6 +103,8 @@ AppContext::AppContext(Options options, QObject* parent)
                                           QStringLiteral("sounds"))});
     connect(audio_.get(), &AudioController::soundFinished, soundboard_.get(),
             &SoundboardController::onSoundFinished);
+    designer_ = std::make_unique<DesignerController>(*engine_, registry, *voices_, voiceStore_,
+                                                     notifications_);
 
     // The voice goes in first so the engine starts with it already built.
     voices_->initialize();

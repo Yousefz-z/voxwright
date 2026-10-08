@@ -16,7 +16,7 @@ Development happens in milestones; each one is a commit.
 | 3 | Real-time engine, device routing, monitor, gate, noise reduction, push-to-talk | Done |
 | 4 | Qt Quick app shell with device selection and live voice switching | Done |
 | 5 | Soundboard with 18 built-in sounds, import, play modes, and global hotkeys | Done |
-| 6 | Voice designer | Planned |
+| 6 | Voice designer: effect chain editor with live preview, quick sliders, import and export | Done |
 | 7 | Tray, settings, start on boot, first-run flow, installers | Planned |
 | 8 | Optional neural voice conversion (behind `VOX_ENABLE_ML`) | Planned |
 

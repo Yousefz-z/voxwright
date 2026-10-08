@@ -13,6 +13,7 @@ ApplicationWindow {
     readonly property int soundboardPage: 1
     readonly property int audioPage: 2
     readonly property int hotkeysPage: 3
+    readonly property int designerPage: 4
 
     width: 1280
     height: 800
@@ -30,6 +31,8 @@ ApplicationWindow {
                 window.page = window.audioPage
             else if (action === "open-hotkeys")
                 window.page = window.hotkeysPage
+            else if (action === "open-designer")
+                window.page = window.designerPage
         }
     }
 
@@ -68,6 +71,14 @@ ApplicationWindow {
                     iconName: "voices"
                     current: window.page === window.voicesPage
                     onClicked: window.page = window.voicesPage
+                }
+                NavButton {
+                    objectName: "navDesigner"
+                    Layout.fillWidth: true
+                    text: qsTr("Voice designer")
+                    iconName: "designer"
+                    current: window.page === window.designerPage
+                    onClicked: window.page = window.designerPage
                 }
                 NavButton {
                     objectName: "navSoundboard"
@@ -134,6 +145,7 @@ ApplicationWindow {
                 SoundboardPage { app: window.app }
                 AudioPage { app: window.app }
                 HotkeysPage { app: window.app }
+                DesignerPage { app: window.app }
             }
 
             // Bottom bar.
@@ -179,7 +191,10 @@ ApplicationWindow {
                         spacing: 0
                         Text {
                             Layout.fillWidth: true
-                            text: window.app.voices.currentName
+                            objectName: "bottomVoiceName"
+                            text: window.app.designer.editing && window.app.designer.previewing
+                                  ? qsTr("Designing %1").arg(window.app.designer.name)
+                                  : window.app.voices.currentName
                             elide: Text.ElideRight
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontBody

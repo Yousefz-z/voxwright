@@ -67,6 +67,9 @@ public:
                                   const plugins::VoiceSettings& settings,
                                   const plugins::EffectRegistry& registry);
     [[nodiscard]] Status setVoiceParameter(std::size_t block, std::size_t param, float value);
+    /// The context voice chains are prepared with (rate, block size, lowest
+    /// voice pitch), for building a chain elsewhere to measure it.
+    [[nodiscard]] plugins::PrepareContext voiceContext() const noexcept;
     [[nodiscard]] Status setVoiceTone(float bassDb, float trebleDb);
     /// Off passes the conditioned microphone through unchanged.
     [[nodiscard]] Status setVoiceEnabled(bool enabled);

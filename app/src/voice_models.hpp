@@ -29,6 +29,7 @@ public:
         TagsRole,
         FavoriteRole,
         ActiveRole,
+        CustomRole, ///< One of the user's own voices.
     };
 
     explicit VoiceListModel(QObject* parent = nullptr);
@@ -53,13 +54,15 @@ class VoiceFilterModel : public QSortFilterProxyModel {
     QML_ELEMENT
     QML_UNCREATABLE("Owned by the application")
     Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY filterChanged)
-    /// A category name, "" for all, or favoritesCategory().
+    /// A category name, "" for all, favoritesCategory(), or mineCategory().
     Q_PROPERTY(QString category READ category WRITE setCategory NOTIFY filterChanged)
     Q_PROPERTY(int count READ count NOTIFY countChanged)
 
 public:
     /// The category value that shows favorites only.
     [[nodiscard]] static QString favoritesCategory() { return QStringLiteral("favorites"); }
+    /// The category value that shows the user's own voices only.
+    [[nodiscard]] static QString mineCategory() { return QStringLiteral("mine"); }
 
     explicit VoiceFilterModel(QObject* parent = nullptr);
 

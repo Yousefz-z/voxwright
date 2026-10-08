@@ -8,6 +8,10 @@ qt_add_library(vox_app_core STATIC
     src/app_context.cpp
     src/app_context.hpp
     src/audio_controller.cpp
+    src/custom_voice_store.cpp
+    src/custom_voice_store.hpp
+    src/designer_controller.cpp
+    src/designer_controller.hpp
     src/audio_controller.hpp
     src/device_list_model.cpp
     src/device_list_model.hpp
@@ -57,8 +61,11 @@ qt_add_qml_module(vox_app_core
         qml/components/Banner.qml
         qml/components/Card.qml
         qml/components/CategoryChip.qml
+        qml/components/ChoiceBox.qml
         qml/components/DevicePicker.qml
+        qml/components/EffectBlockCard.qml
         qml/components/Icon.qml
+        qml/components/IconButton.qml
         qml/components/LabeledSlider.qml
         qml/components/LevelMeter.qml
         qml/components/HotkeyField.qml
@@ -71,6 +78,7 @@ qt_add_qml_module(vox_app_core
         qml/components/ToggleChip.qml
         qml/components/VoiceTile.qml
         qml/pages/AudioPage.qml
+        qml/pages/DesignerPage.qml
         qml/pages/HotkeysPage.qml
         qml/pages/SoundboardPage.qml
         qml/pages/VoicesPage.qml
@@ -93,6 +101,7 @@ if(VOX_BUILD_TESTS)
         tests/app_test_main.cpp
         tests/app_test_support.hpp
         tests/controller_tests.cpp
+        tests/designer_tests.cpp
         tests/hotkey_tests.cpp
         tests/model_tests.cpp
         tests/settings_tests.cpp

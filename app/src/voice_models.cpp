@@ -45,6 +45,8 @@ QVariant VoiceListModel::data(const QModelIndex& index, int role) const {
         return favorites_.contains(id);
     case ActiveRole:
         return id == active_;
+    case CustomRole:
+        return !v.builtIn;
     default:
         return {};
     }
@@ -57,7 +59,7 @@ QHash<int, QByteArray> VoiceListModel::roleNames() const {
             {CategoryRole, "category"}, {DescriptionRole, "description"},
             {IconRole, "iconName"},     {ColorRole, "accentColor"},
             {TagsRole, "tags"},         {FavoriteRole, "favorite"},
-            {ActiveRole, "active"}};
+            {ActiveRole, "active"},     {CustomRole, "custom"}};
 }
 
 void VoiceListModel::setVoices(const std::vector<plugins::VoicePreset>* voices) {
@@ -123,6 +125,10 @@ bool VoiceFilterModel::filterAcceptsRow(int sourceRow, const QModelIndex& source
     const QModelIndex i = sourceModel()->index(sourceRow, 0, sourceParent);
     if (category_ == favoritesCategory()) {
         if (!i.data(VoiceListModel::FavoriteRole).toBool()) {
+            return false;
+        }
+    } else if (category_ == mineCategory()) {
+        if (!i.data(VoiceListModel::CustomRole).toBool()) {
             return false;
         }
     } else if (!category_.isEmpty() &&

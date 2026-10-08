@@ -21,6 +21,7 @@ add_library(vox_plugins STATIC
     src/registry.cpp
     src/sound_pack.cpp
     src/voice_chain.cpp
+    src/voice_edit.cpp
     src/voice_library.cpp
     src/voice_preset.cpp
     ${VOX_VOICES_SOURCE})
@@ -34,6 +35,7 @@ if(VOX_BUILD_TESTS)
         tests/preset_tests.cpp
         tests/registry_tests.cpp
         tests/sound_pack_tests.cpp
+        tests/voice_edit_tests.cpp
         tests/voice_metrics.cpp
         tests/voice_tests.cpp)
     target_link_libraries(vox_plugins_tests PRIVATE vox::plugins vox::testing Catch2::Catch2WithMain)

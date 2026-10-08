@@ -8,9 +8,8 @@ namespace vox::app {
 
 VoiceController::VoiceController(engine::AudioEngine& engine,
                                  const plugins::EffectRegistry& registry,
-                                 const std::vector<plugins::VoicePreset>& presets,
-                                 AppSettings& settings, NotificationModel& notifications,
-                                 QObject* parent)
+                                 std::vector<plugins::VoicePreset>& presets, AppSettings& settings,
+                                 NotificationModel& notifications, QObject* parent)
     : QObject(parent)
     , engine_(engine)
     , registry_(registry)
@@ -117,6 +116,59 @@ void VoiceController::setTone(double bassDb, double trebleDb) {
     }
     emit toneChanged();
     emit settingsChanged();
+}
+
+int VoiceController::customCount() const {
+    return static_cast<int>(
+        std::ranges::count_if(presets_, [](const plugins::VoicePreset& p) { return !p.builtIn; }));
+}
+
+bool VoiceController::currentCustom() const {
+    const auto* p = current();
+    return p != nullptr && !p->builtIn;
+}
+
+std::vector<float> VoiceController::macroPositions(const QString& id) const {
+    const auto* p = find(id);
+    return p != nullptr ? userSettings(*p).macroPositions : std::vector<float>{};
+}
+
+void VoiceController::upsertVoice(const plugins::VoicePreset& preset) {
+    const QString id = QString::fromStdString(preset.id);
+    settings_.voices.remove(id);
+    const auto it = std::ranges::find_if(
+        presets_, [&preset](const plugins::VoicePreset& p) { return p.id == preset.id; });
+    if (it != presets_.end()) {
+        *it = preset;
+    } else {
+        presets_.push_back(preset);
+    }
+    list_.setVoices(&presets_);
+    emit voicesChanged();
+    emit settingsChanged();
+    if (id == settings_.currentVoiceId) {
+        static_cast<void>(selectVoice(id));
+    }
+}
+
+void VoiceController::removeVoice(const QString& id) {
+    const auto it = std::ranges::find_if(
+        presets_, [key = id.toStdString()](const auto& p) { return p.id == key; });
+    if (it == presets_.end() || it->builtIn) {
+        return;
+    }
+    presets_.erase(it);
+    settings_.voices.remove(id);
+    settings_.favorites.removeAll(id);
+    list_.setVoices(&presets_);
+    list_.setFavorites(QSet<QString>(settings_.favorites.begin(), settings_.favorites.end()));
+    emit voicesChanged();
+    emit favoritesChanged();
+    emit voiceRemoved(id);
+    emit settingsChanged();
+    if (id == settings_.currentVoiceId) {
+        initialize(); // falls back to the first voice
+    }
 }
 
 void VoiceController::selectRelative(int delta) {

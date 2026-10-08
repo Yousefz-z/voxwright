@@ -16,6 +16,9 @@
 #include <QSet>
 #include <QTest>
 
+#include <algorithm>
+#include <string_view>
+
 using namespace vox::app;
 using namespace vox::app::test;
 
@@ -99,7 +102,26 @@ QQuickItem* findItem(QQuickWindow* window, const QString& name) {
     return findItem(window->contentItem(), name);
 }
 
+/// Scrolls the nearest Flickable (a ScrollView's content) so `item` shows,
+/// if it is outside the visible part.
+void scrollIntoView(QQuickItem* item) {
+    for (QQuickItem* p = item->parentItem(); p != nullptr; p = p->parentItem()) {
+        if (!p->inherits("QQuickFlickable")) {
+            continue;
+        }
+        auto* content = p->property("contentItem").value<QQuickItem*>();
+        const double top = item->mapToItem(content, QPointF(0, 0)).y();
+        const double shown = p->property("contentY").toDouble();
+        if (top < shown || top + item->height() > shown + p->height()) {
+            p->setProperty("contentY", std::max(0.0, top - 20.0));
+            QTest::qWait(60);
+        }
+        return;
+    }
+}
+
 void click(QQuickWindow* window, QQuickItem* item) {
+    scrollIntoView(item);
     const QPointF center = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
     QTest::mouseClick(window, Qt::LeftButton, {}, center.toPoint());
     // Views create delegates on the next polish and render pass.
@@ -241,6 +263,102 @@ TEST_CASE("Notifications appear as banners and their actions run", "[app][ui]") 
     t.context().runAction(QStringLiteral("open-audio"));
     QCoreApplication::processEvents();
     CHECK(window->property("page").toInt() == window->property("audioPage").toInt());
+
+    INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
+    CHECK(collector.warnings().isEmpty());
+}
+
+TEST_CASE("The voice designer builds, saves, lists, and deletes a voice", "[app][ui][designer]") {
+    const WarningCollector collector;
+    TestApp t;
+    auto& ctx = t.context();
+    t.pump(0.3, vox::testing::sine(220.0, 0.5, 48000.0, 0.3F));
+    REQUIRE(ctx.voices()->selectVoice(QStringLiteral("deep-baritone")));
+    QQmlApplicationEngine qml;
+    qml.setInitialProperties({{QStringLiteral("app"), QVariant::fromValue(&ctx)}});
+    qml.loadFromModule(QStringLiteral("Voxwright"), QStringLiteral("Main"));
+    REQUIRE(qml.rootObjects().size() == 1);
+    auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().front());
+    REQUIRE(window != nullptr);
+    window->resize(1280, 820);
+    window->show();
+    REQUIRE(QTest::qWaitForWindowExposed(window));
+
+    // From the Voices page, customize a copy of the current voice.
+    click(window, findItem(window, QStringLiteral("customizeVoice")));
+    auto* designer = ctx.designer();
+    REQUIRE(designer->editing());
+    CHECK(designer->name() == QStringLiteral("Deep Baritone (mine)"));
+    auto* editor = findItem(window, QStringLiteral("designerEditor"));
+    REQUIRE(editor != nullptr);
+    CHECK(editor->isVisible());
+
+    // Add a tremolo from the palette, move it up, give it a quick slider.
+    click(window, findItem(window, QStringLiteral("addEffect_tremolo")));
+    REQUIRE(designer->blocks().size() == 3);
+    auto* last = findItem(window, QStringLiteral("block2"));
+    REQUIRE(last != nullptr);
+    click(window, findItem(last, QStringLiteral("moveUp")));
+    REQUIRE(designer->draft().blocks[1].effect == "tremolo");
+    // Cards are rebuilt when the chain changes, so look them up each time.
+    const auto inTremolo = [&](const char* name) {
+        QQuickItem* card = findItem(window, QStringLiteral("block1"));
+        REQUIRE(card != nullptr);
+        QQuickItem* item = findItem(card, QString::fromLatin1(name));
+        REQUIRE(item != nullptr);
+        return item;
+    };
+    click(window, inTremolo("expose_rate"));
+    CHECK(designer->macros().size() == 3);
+    click(window, inTremolo("bypass"));
+    CHECK(designer->draft().blocks[1].bypassed);
+    click(window, inTremolo("bypass"));
+    CHECK_FALSE(designer->draft().blocks[1].bypassed);
+
+    // Type a name.
+    auto* nameField = findItem(window, QStringLiteral("voiceNameField"));
+    REQUIRE(nameField != nullptr);
+    nameField->setProperty("text", QString{});
+    nameField->forceActiveFocus();
+    for (const char c : std::string_view("Grumpy Giant")) {
+        QTest::keyClick(window, c);
+    }
+    CHECK(designer->name() == QStringLiteral("Grumpy Giant"));
+    auto* bottomName = findItem(window, QStringLiteral("bottomVoiceName"));
+    REQUIRE(bottomName != nullptr);
+    CHECK(bottomName->property("text").toString().contains(QStringLiteral("Grumpy Giant")));
+    auto* chain = findItem(window, QStringLiteral("chainScroll"));
+    REQUIRE(chain != nullptr);
+    chain->property("contentItem").value<QQuickItem*>()->setProperty("contentY", 0.0);
+    static_cast<void>(grab(window, QStringLiteral("designer")));
+
+    click(window, findItem(window, QStringLiteral("designerSave")));
+    REQUIRE_FALSE(designer->editing());
+    CHECK(ctx.voices()->currentName() == QStringLiteral("Grumpy Giant"));
+    const QString id = ctx.voices()->currentVoiceId();
+    auto* row = findItem(window, QStringLiteral("myVoice_") + id);
+    REQUIRE(row != nullptr);
+    CHECK(row->isVisible());
+    static_cast<void>(grab(window, QStringLiteral("designer-landing")));
+
+    // The Voices page offers the user's voices as a filter.
+    click(window, findItem(window, QStringLiteral("navVoices")));
+    auto* mine = findItem(window, QStringLiteral("mineChip"));
+    REQUIRE(mine != nullptr);
+    CHECK(mine->isVisible());
+    click(window, mine);
+    CHECK(ctx.voices()->voices()->count() == 1);
+    ctx.voices()->voices()->setCategory({});
+
+    // Delete it from the designer's list, through the confirmation.
+    click(window, findItem(window, QStringLiteral("navDesigner")));
+    click(window, findItem(findItem(window, QStringLiteral("myVoice_") + id),
+                           QStringLiteral("deleteVoice")));
+    auto* confirm = findItem(window, QStringLiteral("confirmDeleteButton"));
+    REQUIRE(confirm != nullptr);
+    click(window, confirm);
+    CHECK(ctx.voices()->preset(id) == nullptr);
+    CHECK(ctx.voices()->customCount() == 0);
 
     INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
     CHECK(collector.warnings().isEmpty());

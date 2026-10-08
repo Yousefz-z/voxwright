@@ -1,6 +1,8 @@
 #pragma once
 
 #include "audio_controller.hpp"
+#include "custom_voice_store.hpp"
+#include "designer_controller.hpp"
 #include "hotkey_controller.hpp"
 #include "hotkeys/global_hotkeys.hpp"
 #include "notification_model.hpp"
@@ -33,6 +35,7 @@ class AppContext : public QObject {
     Q_PROPERTY(vox::app::VoiceController* voices READ voices CONSTANT)
     Q_PROPERTY(vox::app::SoundboardController* soundboard READ soundboard CONSTANT)
     Q_PROPERTY(vox::app::HotkeyController* hotkeys READ hotkeys CONSTANT)
+    Q_PROPERTY(vox::app::DesignerController* designer READ designer CONSTANT)
     Q_PROPERTY(vox::app::NotificationModel* notifications READ notifications CONSTANT)
     Q_PROPERTY(QString version READ version CONSTANT)
 
@@ -63,6 +66,7 @@ public:
     [[nodiscard]] VoiceController* voices() { return voices_.get(); }
     [[nodiscard]] SoundboardController* soundboard() { return soundboard_.get(); }
     [[nodiscard]] HotkeyController* hotkeys() { return hotkeyController_.get(); }
+    [[nodiscard]] DesignerController* designer() { return designer_.get(); }
     [[nodiscard]] GlobalHotkeys& globalHotkeys() { return *globalHotkeys_; }
     [[nodiscard]] NotificationModel* notifications() { return &notifications_; }
     [[nodiscard]] static QString version();
@@ -91,11 +95,13 @@ private:
     std::unique_ptr<devices::AudioBackend> backend_;
     std::unique_ptr<engine::AudioEngine> engine_;
     std::vector<plugins::VoicePreset> presets_;
+    CustomVoiceStore voiceStore_;
     std::unique_ptr<AudioController> audio_;
     std::unique_ptr<VoiceController> voices_;
     std::unique_ptr<GlobalHotkeys> globalHotkeys_;
     std::unique_ptr<HotkeyController> hotkeyController_;
     std::unique_ptr<SoundboardController> soundboard_;
+    std::unique_ptr<DesignerController> designer_;
     QTimer saveTimer_;
 };
 

@@ -319,7 +319,12 @@ by CI on those platforms and are on the
   sound grid model, importing (copy into the library folder, decode on a
   worker thread, a specific message per failed file), per-sound options,
   and the playing state; `SoundboardStore` saves the boards as
-  `soundboards.json`. `SettingsStore` saves `AppSettings` as JSON. The QML module
+  `soundboards.json`. `DesignerController` edits a draft voice with the
+  operations in `plugins/voice_edit.hpp` (insert, remove, and move blocks
+  with their macro targets, expose a setting as a quick slider), plays it
+  as the active voice while it changes, and saves it through
+  `CustomVoiceStore` (one JSON file per voice). `SettingsStore` saves
+  `AppSettings` as JSON. The QML module
   `Voxwright` (pages, components, theme, icons) is compiled into the same
   library, so tests run exactly what the app runs.
 * `voxwright` is the executable: `main()` creates the system backend (or,
@@ -344,6 +349,8 @@ showed as icons drawn outside the voice grid.
 | ![Voices page](images/screenshots/voices.png) | ![Audio page](images/screenshots/audio.png) |
 | **Soundboard** | **Hotkeys** |
 | ![Soundboard page with a sound playing](images/screenshots/soundboard.png) | ![Hotkeys page in push-to-talk mode](images/screenshots/hotkeys.png) |
+| **Voice designer** | **Voice designer, saved voices** |
+| ![Voice designer editing a copy of Deep Baritone](images/screenshots/designer.png) | ![Voice designer list of the user's voices](images/screenshots/designer-landing.png) |
 
 Rendered by the UI test on the fake backend (a synthetic 220 Hz tone on
 the microphone), so the meters and latency are real engine output.
@@ -463,19 +470,25 @@ phrase:
 
 | Configuration | Mean (% of block) | 99th percentile (% of block) | Worst (% of block) |
 |---|---|---|---|
-| No voice | 2.1 | 9.0 | 39.7 |
-| No voice, noise reduction on | 2.1 | 9.1 | 59.3 |
-| Clean Voice | 2.3 | 9.3 | 22.4 |
-| Deep Baritone (PSOLA) | 4.2 | 13.4 | 28.7 |
-| Choir Bot (vocoder + harmonizer) | 3.5 | 11.2 | 20.2 |
-| Cathedral (reverb) | 3.0 | 13.6 | 20.8 |
+| No voice | 2.3 | 11.5 | 106.8 |
+| No voice, noise reduction on | 2.1 | 9.9 | 12.3 |
+| Clean Voice | 2.4 | 10.5 | 14.0 |
+| Deep Baritone (PSOLA) | 4.2 | 13.4 | 63.7 |
+| Choir Bot (vocoder + harmonizer) | 3.6 | 12.0 | 26.1 |
+| Cathedral (reverb) | 3.0 | 10.6 | 162.5 |
+| Designer maximum (12 heavy effects) | 15.0 | 34.4 | 305.5 |
 
 RNNoise runs on every block (so it is ready when switched on) but
 processes a whole 10 ms frame in one of every 3.75 blocks, which sets the
 99th percentile. The worst single blocks include preemption by other work
-on the shared 4-vCPU virtual machine (the graph without a voice shows the
-largest spikes); the 99th percentile is the meaningful figure. Checklist
-item A14 measures the load on a slow real machine.
+on the shared 4-vCPU virtual machine (the graph without a voice shows
+spikes past a whole block); the 99th percentile is the meaningful figure.
+"Designer maximum" is the largest voice the designer allows: pitch,
+harmonizer, vocoder, reverb, whisper, chorus, flanger, phaser, echo,
+distortion, filter, and resonator in one chain
+([D29](decisions.md#d29-a-voice-holds-up-to-12-effects-and-4-quick-sliders)).
+Checklist items A14 and D4 measure the load on a slow real machine, where
+the processing load readout (Audio page and designer) shows it.
 
 **Latency**, microphone to virtual microphone, engine side. The fake
 backend runs the devices in lock-step in simulated time, so the measured

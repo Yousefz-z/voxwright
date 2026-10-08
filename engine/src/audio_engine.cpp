@@ -407,11 +407,7 @@ void AudioEngine::afterSend() noexcept {
 Status AudioEngine::setVoice(const plugins::VoicePreset& preset,
                              const plugins::VoiceSettings& settings,
                              const plugins::EffectRegistry& registry) {
-    plugins::PrepareContext context;
-    context.sampleRate = kEngineRate;
-    context.maxBlockSize = graph_.maxBlock();
-    context.minVoiceHz = config_.minVoiceHz;
-    auto chain = plugins::VoiceChain::build(preset, settings, registry, context);
+    auto chain = plugins::VoiceChain::build(preset, settings, registry, voiceContext());
     if (!chain) {
         return chain.error();
     }
@@ -420,6 +416,14 @@ Status AudioEngine::setVoice(const plugins::VoicePreset& preset,
     }
     afterSend();
     return {};
+}
+
+plugins::PrepareContext AudioEngine::voiceContext() const noexcept {
+    plugins::PrepareContext context;
+    context.sampleRate = kEngineRate;
+    context.maxBlockSize = graph_.maxBlock();
+    context.minVoiceHz = config_.minVoiceHz;
+    return context;
 }
 
 Status AudioEngine::setVoiceParameter(std::size_t block, std::size_t param, float value) {

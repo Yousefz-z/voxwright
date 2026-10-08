@@ -19,6 +19,7 @@ ColumnLayout {
 
     spacing: 4
     Layout.fillWidth: true
+    opacity: enabled ? 1.0 : 0.45
 
     RowLayout {
         Layout.fillWidth: true

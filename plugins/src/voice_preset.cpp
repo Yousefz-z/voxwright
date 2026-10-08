@@ -222,6 +222,11 @@ Status parseMacros(const Json& root, const EffectRegistry& registry, VoicePreset
     if (!macros->is_array()) {
         return presetError(ErrorCode::InvalidPreset, "voice.macros", "must be a list.");
     }
+    if (macros->size() > kMaxVoiceMacros) {
+        return presetError(ErrorCode::InvalidPreset, "voice.macros",
+                           "at most " + std::to_string(kMaxVoiceMacros) +
+                               " quick sliders are allowed.");
+    }
     std::set<std::string> ids;
     for (std::size_t m = 0; m < macros->size(); ++m) {
         const Json& macro = (*macros)[m];
@@ -301,6 +306,11 @@ Result<VoicePreset> parseVoicePreset(std::string_view json, const EffectRegistry
     if (blocks == root.end() || !blocks->is_array()) {
         return presetError(ErrorCode::InvalidPreset, "voice.blocks",
                            "a list of effect blocks is required.");
+    }
+    if (blocks->size() > kMaxVoiceBlocks) {
+        return presetError(ErrorCode::InvalidPreset, "voice.blocks",
+                           "at most " + std::to_string(kMaxVoiceBlocks) +
+                               " effect blocks are allowed.");
     }
     for (std::size_t b = 0; b < blocks->size(); ++b) {
         auto block = parseBlock((*blocks)[b], "blocks[" + std::to_string(b) + "]", registry);

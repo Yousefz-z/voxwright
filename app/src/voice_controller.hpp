@@ -19,15 +19,18 @@
 namespace vox::app {
 
 /// Voice browsing and live switching: the filtered voice grid, the active
-/// voice and its macro and tone sliders, and favorites.
+/// voice and its macro and tone sliders, favorites, and the list of voices
+/// (built-in voices first, then the user's own).
 class VoiceController : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Owned by the application")
 
     Q_PROPERTY(vox::app::VoiceFilterModel* voices READ voices CONSTANT)
-    Q_PROPERTY(QStringList categories READ categories CONSTANT)
-    Q_PROPERTY(int voiceCount READ voiceCount CONSTANT)
+    Q_PROPERTY(QStringList categories READ categories NOTIFY voicesChanged)
+    Q_PROPERTY(int voiceCount READ voiceCount NOTIFY voicesChanged)
+    Q_PROPERTY(int customCount READ customCount NOTIFY voicesChanged)
+    Q_PROPERTY(bool currentCustom READ currentCustom NOTIFY currentVoiceChanged)
     Q_PROPERTY(QString currentVoiceId READ currentVoiceId NOTIFY currentVoiceChanged)
     Q_PROPERTY(QString currentName READ currentName NOTIFY currentVoiceChanged)
     Q_PROPERTY(QString currentDescription READ currentDescription NOTIFY currentVoiceChanged)
@@ -41,7 +44,7 @@ class VoiceController : public QObject {
 
 public:
     VoiceController(engine::AudioEngine& engine, const plugins::EffectRegistry& registry,
-                    const std::vector<plugins::VoicePreset>& presets, AppSettings& settings,
+                    std::vector<plugins::VoicePreset>& presets, AppSettings& settings,
                     NotificationModel& notifications, QObject* parent = nullptr);
 
     /// Activates the saved voice (or the first one if it no longer exists).
@@ -63,6 +66,19 @@ public:
     [[nodiscard]] VoiceFilterModel* voices() { return &filter_; }
     [[nodiscard]] QStringList categories() const;
     [[nodiscard]] int voiceCount() const { return static_cast<int>(presets_.size()); }
+    [[nodiscard]] int customCount() const;
+    [[nodiscard]] bool currentCustom() const;
+    [[nodiscard]] const std::vector<plugins::VoicePreset>& presets() const { return presets_; }
+    [[nodiscard]] const plugins::VoicePreset* preset(const QString& id) const { return find(id); }
+    /// Where the user has the quick sliders of voice `id` now.
+    [[nodiscard]] std::vector<float> macroPositions(const QString& id) const;
+    [[nodiscard]] bool backgroundEnabled() const { return settings_.backgroundEnabled; }
+
+    /// Adds one of the user's voices, or replaces it if the id exists. Its
+    /// saved slider positions are dropped, since its sliders may differ now.
+    void upsertVoice(const plugins::VoicePreset& preset);
+    /// Removes one of the user's voices with its favorite and settings.
+    void removeVoice(const QString& id);
     [[nodiscard]] QString currentVoiceId() const { return settings_.currentVoiceId; }
     [[nodiscard]] QString currentName() const;
     [[nodiscard]] QString currentDescription() const;
@@ -80,6 +96,8 @@ signals:
     void toneChanged();
     void favoritesChanged();
     void settingsChanged();
+    void voicesChanged();
+    void voiceRemoved(const QString& id);
 
 private:
     [[nodiscard]] const plugins::VoicePreset* find(const QString& id) const;
@@ -91,7 +109,7 @@ private:
 
     engine::AudioEngine& engine_;
     const plugins::EffectRegistry& registry_;
-    const std::vector<plugins::VoicePreset>& presets_;
+    std::vector<plugins::VoicePreset>& presets_;
     AppSettings& settings_;
     NotificationModel& notifications_;
     VoiceListModel list_;

@@ -243,3 +243,36 @@ switches earlier instead of overflowing. The default window is 1280 px
 wide so the labels show at the default size; the minimum is 960 px. A UI
 test resizes the window from 1280 to 960 px with a sound playing and
 checks that the input meter stays inside the window.
+
+## D27. The user's voices are files; built-in voices are read-only
+
+*2026-10-08.* Each voice the user saves is one JSON file in `voices/` in
+the user data folder, in exactly the format of the built-in voices, and an
+exported `.voxvoice` file is the same JSON. One file per voice means a
+damaged file costs one voice, not all of them, and a voice can be shared by
+copying a file. Built-in voices ship inside the program and are never
+changed in place: "Customize a copy" saves a new voice, so an update can
+improve a built-in voice without overwriting anyone's edits. Custom voice
+ids are `custom-` plus random hex, which keeps them valid as file names.
+
+## D28. Effects are reordered with buttons
+
+*2026-10-08.* The designer moves an effect with "Move up" and "Move down"
+buttons rather than by dragging. Buttons work with the keyboard and screen
+readers, which drag and drop in Qt Quick does not, and they are exercised
+by the UI test. Chains hold at most 12 effects, so a few clicks reach any
+position. Dragging can be added later on top of the same `moveBlock()`.
+
+## D29. A voice holds up to 12 effects and 4 quick sliders
+
+*2026-10-08.* Each effect costs processing time on the audio thread, and
+an unbounded chain (or an imported file with hundreds of blocks) could
+not keep up in real time. The engine benchmark measures a voice of 12 of
+the most expensive effects at 15 % of the block time on average and 34 %
+at the 99th percentile on the development machine (architecture.md,
+engine measurements). A machine three times slower would run out of time
+on the slowest blocks with such a voice, so the designer and the Audio
+page show the live processing load, and checklist item D4 measures the
+slowest supported machine. Built-in voices use at most 5 effects and 3
+quick sliders. The limits are checked when editing and when loading any file.
+
