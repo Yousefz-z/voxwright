@@ -297,6 +297,38 @@ TEST_CASE("Closing the window quits unless Voxwright keeps running in the tray",
     CHECK(collector.warnings().isEmpty());
 }
 
+TEST_CASE("Without notifications the page gets all the height above the bottom bar", "[app][ui]") {
+    const WarningCollector collector;
+    TestApp t;
+    QQmlApplicationEngine qml;
+    qml.setInitialProperties({{QStringLiteral("app"), QVariant::fromValue(&t.context())}});
+    qml.loadFromModule(QStringLiteral("Voxwright"), QStringLiteral("Main"));
+    REQUIRE(qml.rootObjects().size() == 1);
+    auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().front());
+    REQUIRE(window != nullptr);
+    window->resize(1280, 820);
+    window->show();
+    REQUIRE(QTest::qWaitForWindowExposed(window));
+    auto* notes = t.context().notifications();
+    while (notes->count() > 0) {
+        notes->dismiss(notes->data(notes->index(0), NotificationModel::IdRole).toString());
+    }
+    QTest::qWait(100);
+    REQUIRE(notes->count() == 0);
+    auto* banners = findItem(window, QStringLiteral("banners"));
+    auto* pages = findItem(window, QStringLiteral("pages"));
+    auto* bottomBar = findItem(window, QStringLiteral("bottomBar"));
+    REQUIRE(banners != nullptr);
+    REQUIRE(pages != nullptr);
+    REQUIRE(bottomBar != nullptr);
+    CHECK_FALSE(banners->isVisible());
+    CHECK(pages->y() < 1.0);
+    CHECK(pages->height() > bottomBar->y() - 1.0);
+
+    INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
+    CHECK(collector.warnings().isEmpty());
+}
+
 TEST_CASE("The voice designer builds, saves, lists, and deletes a voice", "[app][ui][designer]") {
     const WarningCollector collector;
     TestApp t;

@@ -181,6 +181,11 @@ ApplicationWindow {
             ColumnLayout {
                 objectName: "banners"
                 Layout.fillWidth: true
+                // An empty nested layout still takes space: it fills by
+                // default and keeps the size of its last banner. Hidden, it
+                // takes none.
+                visible: window.app.notifications.count > 0
+                Layout.fillHeight: false
                 Layout.leftMargin: 20
                 Layout.rightMargin: 20
                 Layout.topMargin: window.app.notifications.count > 0 ? 16 : 0
@@ -196,6 +201,7 @@ ApplicationWindow {
             }
 
             StackLayout {
+                objectName: "pages"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: window.page
