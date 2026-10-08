@@ -15,6 +15,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QSet>
+#include <QSignalSpy>
 #include <QTest>
 
 #include <algorithm>
@@ -268,6 +269,29 @@ TEST_CASE("Notifications appear as banners and their actions run", "[app][ui]") 
     t.context().runAction(QStringLiteral("open-audio"));
     QCoreApplication::processEvents();
     CHECK(window->property("page").toInt() == window->property("audioPage").toInt());
+
+    INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
+    CHECK(collector.warnings().isEmpty());
+}
+
+TEST_CASE("Closing the window quits unless Voxwright keeps running in the tray", "[app][ui]") {
+    const WarningCollector collector;
+    TestApp t;
+    // The offscreen platform has no tray, so closing must quit.
+    REQUIRE_FALSE(t.context().system()->closeToTray());
+    QQmlApplicationEngine qml;
+    // Count quit requests instead of ending the test run.
+    QObject::disconnect(&qml, &QQmlEngine::quit, nullptr, nullptr);
+    const QSignalSpy quits(&qml, &QQmlEngine::quit);
+    qml.setInitialProperties({{QStringLiteral("app"), QVariant::fromValue(&t.context())}});
+    qml.loadFromModule(QStringLiteral("Voxwright"), QStringLiteral("Main"));
+    REQUIRE(qml.rootObjects().size() == 1);
+    auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().front());
+    REQUIRE(window != nullptr);
+    window->show();
+    REQUIRE(QTest::qWaitForWindowExposed(window));
+    window->close();
+    CHECK(QTest::qWaitFor([&] { return quits.count() == 1; }, 1000));
 
     INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
     CHECK(collector.warnings().isEmpty());

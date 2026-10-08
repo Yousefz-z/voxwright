@@ -47,9 +47,12 @@ ApplicationWindow {
     }
 
     // Closing keeps Voxwright running in the tray when the user wants that.
+    // Otherwise it quits: with a tray, closing the last window does not.
     onClosing: close => {
-        if (!window.app.system.closeToTray)
+        if (!window.app.system.closeToTray) {
+            Qt.quit()
             return
+        }
         close.accepted = false
         window.hide()
         if (!window.trayNoticeShown) {
