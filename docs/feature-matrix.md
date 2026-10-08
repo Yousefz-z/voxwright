@@ -55,10 +55,10 @@ Module names refer to the layout in [architecture.md](architecture.md):
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
-| Multiple soundboards / folders (categories) | M | Boards are named categories in a sidebar; each holds an ordered grid of sound tiles. |
+| Multiple soundboards / folders (categories) | M | Boards are named tabs above the sound grid; each holds an ordered grid of sound tiles. Boards can be added, renamed, and removed (never the last one). Saved in `soundboards.json` next to the settings, with the same atomic writes and damaged-file recovery. |
 | Import user audio (MP3, WAV; vendor limit about 20 MB or 8 minutes) | M | Drag and drop or file dialog. Decoding by miniaudio (WAV, MP3, FLAC) and its bundled Vorbis decoder (OGG). Files are copied into the library folder. Limit 50 MB and 10 minutes with a specific error for each limit and for each decode failure. High-quality resampling to 48 kHz with libsamplerate (best sinc). |
 | Loudness normalization on import | N | Optional: measure integrated loudness (ITU-R BS.1770 K-weighting, gated) and store a gain that brings each clip to -16 LUFS. |
-| Per-sound hotkey | M | Global hotkey per sound (section 12). |
+| Per-sound hotkey | M | Global hotkey per sound, set in the sound's settings (section 12). |
 | Per-sound volume | M | dB gain per tile, smoothed. |
 | Play modes: Play/Restart, Play/Stop, Play/Pause, Play/Overlap, hold-to-play loop | M | `engine::SoundboardPlayer` implements all five modes with a voice pool (32 voices), click-free start/stop fades. |
 | Loop toggle | M | Per-sound loop flag with sample-accurate wrap. |
@@ -66,7 +66,7 @@ Module names refer to the layout in [architecture.md](architecture.md):
 | "Mute for me" (others hear the sound, I do not) | M | Per-sound flag excludes the clip from the monitor bus. Global "sounds in my headphones" switch too. |
 | Stop-all-sounds panic hotkey | M | System hotkey and button. |
 | Slots that hold a voice instead of a sound | N | A tile can reference a voice; triggering it switches voice. |
-| Built-in meme sounds | M | 24 original sounds synthesized from scratch by an internal tool (`tools/sounds/`): air horn, rimshot, sad trombone, applause, crickets, laser, boing, buzzer, ding, drum roll, whoosh, record scratch, cash register, explosion, slide whistle, alarm, and others. Original to this project, rendered at build time. No third-party clips. |
+| Built-in meme sounds | M | 18 original sounds synthesized from code in `plugins/src/sound_pack.cpp` when the app starts (oscillators, noise, filters, envelopes, a small reverb): stadium horn, applause, ta-da, deflate, rimshot, drum roll, fanfare, laser, boing, whoosh, explosion, glitch, crickets, heartbeat, wrong answer, right answer, alarm, censor bleep. Each is normalized to -18 LUFS with peaks under -1 dBFS. No recordings and no third-party clips ([decisions.md](decisions.md#d24-built-in-sounds-are-rendered-at-startup)). |
 | Monthly content drops, online sound hub, mobile remote app | X | Require an online service. |
 | Queue mode (feature request in the vendor's public feedback board) | X | Not in the reference product either. |
 
@@ -147,11 +147,11 @@ Module names refer to the layout in [architecture.md](architecture.md):
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
-| Hotkey per voice | M | Assign from the voice card context menu. |
-| Hotkey per sound | M | Assign from the sound tile. |
+| Hotkey per voice | M | Set in the current-voice panel on the Voices page; the key switches to that voice from any app. |
+| Hotkey per sound | M | Set in the sound's settings, opened from the pencil on its tile. |
 | System hotkeys (hear-myself, voice changer on/off, mute, stop all sounds, background on/off) | M | Hotkeys settings page. Also push-to-talk, push-to-mute, random voice, next/previous voice, censor beep. |
 | Work while a game has focus | M | Windows: low-level keyboard hook on a dedicated thread (key-down and key-up, keys are not swallowed). macOS: Carbon `RegisterEventHotKey` (press and release events, no Accessibility permission needed). Linux is a development platform only and reports "global hotkeys unavailable". |
-| Conflict detection | M | Binding store rejects duplicates with a message naming the existing owner. |
+| Conflict detection | M | A key already in use is refused with a message naming its owner (an action, a voice, or a sound). Saved keys that conflict at startup are dropped with a notification. |
 | Mouse buttons as hotkeys | N | Windows low-level mouse hook for X1/X2 buttons. |
 
 ## 13. Settings and first run

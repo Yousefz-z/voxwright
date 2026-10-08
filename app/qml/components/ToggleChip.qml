@@ -8,11 +8,18 @@ AbstractButton {
 
     property string iconName
     property color onColor: Theme.accent
+    /// Icon only, for narrow windows (the name shows as a tooltip).
+    property bool compact: false
+    /// Width with the label shown, whether or not it is shown now.
+    readonly property real fullWidth: Math.max(112, Math.ceil(20 + row.spacing + nameMetrics.advanceWidth) + 2 * padding)
 
     checkable: true
     hoverEnabled: true
+    padding: 10
     implicitHeight: 48
-    implicitWidth: Math.max(128, row.implicitWidth + 28)
+    implicitWidth: compact ? 48 : fullWidth
+    ToolTip.visible: compact && hovered
+    ToolTip.text: text
     Accessible.name: text
     Accessible.checkable: true
     Accessible.checked: checked
@@ -25,17 +32,26 @@ AbstractButton {
         border.color: root.checked ? root.onColor : Theme.border
     }
 
+    TextMetrics {
+        id: nameMetrics
+        text: root.text
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.fontBody
+        font.weight: Font.DemiBold
+    }
+
     contentItem: Item {
         Row {
             id: row
             anchors.centerIn: parent
-            spacing: 10
+            spacing: 8
             Icon {
                 anchors.verticalCenter: parent.verticalCenter
                 name: root.iconName
                 color: root.checked ? root.onColor : Theme.textSecondary
             }
             Column {
+                visible: !root.compact
                 anchors.verticalCenter: parent.verticalCenter
                 Text {
                     text: root.text

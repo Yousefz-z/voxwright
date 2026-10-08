@@ -8,8 +8,13 @@ ApplicationWindow {
 
     required property AppContext app
     property int page: 0
+    // Page indexes.
+    readonly property int voicesPage: 0
+    readonly property int soundboardPage: 1
+    readonly property int audioPage: 2
+    readonly property int hotkeysPage: 3
 
-    width: 1240
+    width: 1280
     height: 800
     minimumWidth: 960
     minimumHeight: 640
@@ -22,7 +27,9 @@ ApplicationWindow {
         target: window.app
         function onUiActionRequested(action) {
             if (action === "open-audio")
-                window.page = 1
+                window.page = window.audioPage
+            else if (action === "open-hotkeys")
+                window.page = window.hotkeysPage
         }
     }
 
@@ -59,16 +66,32 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     text: qsTr("Voices")
                     iconName: "voices"
-                    current: window.page === 0
-                    onClicked: window.page = 0
+                    current: window.page === window.voicesPage
+                    onClicked: window.page = window.voicesPage
+                }
+                NavButton {
+                    objectName: "navSoundboard"
+                    Layout.fillWidth: true
+                    text: qsTr("Soundboard")
+                    iconName: "soundboard"
+                    current: window.page === window.soundboardPage
+                    onClicked: window.page = window.soundboardPage
                 }
                 NavButton {
                     objectName: "navAudio"
                     Layout.fillWidth: true
                     text: qsTr("Audio")
                     iconName: "audio"
-                    current: window.page === 1
-                    onClicked: window.page = 1
+                    current: window.page === window.audioPage
+                    onClicked: window.page = window.audioPage
+                }
+                NavButton {
+                    objectName: "navHotkeys"
+                    Layout.fillWidth: true
+                    text: qsTr("Hotkeys")
+                    iconName: "keyboard"
+                    current: window.page === window.hotkeysPage
+                    onClicked: window.page = window.hotkeysPage
                 }
                 Item { Layout.fillHeight: true }
                 Text {
@@ -108,11 +131,25 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 currentIndex: window.page
                 VoicesPage { app: window.app }
+                SoundboardPage { app: window.app }
                 AudioPage { app: window.app }
+                HotkeysPage { app: window.app }
             }
 
             // Bottom bar.
             Rectangle {
+                id: bottomBar
+                objectName: "bottomBar"
+                // Chips drop their labels when the full bar would not fit.
+                // The stop button counts even when hidden, so the layout does
+                // not jump when a sound starts.
+                readonly property int gap: 10
+                readonly property int infoWidth: 140
+                readonly property int meterWidth: 100
+                readonly property real fullWidth: 2 * 20 + 9 * gap + 40 + infoWidth + voiceChip.fullWidth
+                                                  + hearChip.fullWidth + backgroundChip.fullWidth
+                                                  + noiseChip.fullWidth + 32 + 32 + meterWidth
+                readonly property bool compact: width < fullWidth
                 Layout.fillWidth: true
                 Layout.preferredHeight: Theme.bottomBarHeight
                 color: Theme.sidebar
@@ -121,7 +158,7 @@ ApplicationWindow {
                     anchors.fill: parent
                     anchors.leftMargin: 20
                     anchors.rightMargin: 20
-                    spacing: 12
+                    spacing: bottomBar.gap
 
                     Rectangle {
                         readonly property color tint: window.app.voices.currentColor.length > 0 ? window.app.voices.currentColor : Theme.accent
@@ -138,7 +175,7 @@ ApplicationWindow {
                         }
                     }
                     ColumnLayout {
-                        Layout.preferredWidth: 170
+                        Layout.preferredWidth: bottomBar.compact ? 120 : bottomBar.infoWidth
                         spacing: 0
                         Text {
                             Layout.fillWidth: true
@@ -162,26 +199,34 @@ ApplicationWindow {
                     }
 
                     ToggleChip {
+                        id: voiceChip
                         objectName: "voiceChangerToggle"
+                        compact: bottomBar.compact
                         text: qsTr("Voice changer")
                         iconName: "power"
                         checked: window.app.audio.voiceEnabled
                         onToggled: window.app.audio.voiceEnabled = checked
                     }
                     ToggleChip {
+                        id: hearChip
                         objectName: "hearMyselfToggle"
+                        compact: bottomBar.compact
                         text: qsTr("Hear myself")
                         iconName: "headphones"
                         checked: window.app.audio.hearMyself
                         onToggled: window.app.audio.hearMyself = checked
                     }
                     ToggleChip {
+                        id: backgroundChip
+                        compact: bottomBar.compact
                         text: qsTr("Background")
                         iconName: "waves"
                         checked: window.app.audio.backgroundEnabled
                         onToggled: window.app.audio.backgroundEnabled = checked
                     }
                     ToggleChip {
+                        id: noiseChip
+                        compact: bottomBar.compact
                         text: qsTr("Noise reduction")
                         iconName: "filter"
                         checked: window.app.audio.noiseReduction
@@ -190,10 +235,52 @@ ApplicationWindow {
 
                     Item { Layout.fillWidth: true }
 
-                    Icon { name: "mic"; width: 18; height: 18; color: Theme.textSecondary }
+                    AbstractButton {
+                        id: stopSounds
+                        objectName: "stopSoundsButton"
+                        visible: window.app.soundboard.playingCount > 0
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        hoverEnabled: true
+                        onClicked: window.app.soundboard.stopAll()
+                        Accessible.name: qsTr("Stop all sounds")
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Stop all sounds")
+                        background: Rectangle {
+                            radius: 16
+                            color: stopSounds.hovered ? Theme.surfaceHover : Theme.accentSoft
+                        }
+                        contentItem: Item {
+                            Icon { anchors.centerIn: parent; width: 16; height: 16; name: "stop"; color: Theme.accent }
+                        }
+                    }
+                    AbstractButton {
+                        id: muteButton
+                        objectName: "muteButton"
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        checkable: true
+                        checked: window.app.audio.muted
+                        onToggled: window.app.audio.muted = checked
+                        Accessible.name: checked ? qsTr("Unmute microphone") : qsTr("Mute microphone")
+                        background: Rectangle {
+                            radius: 16
+                            color: muteButton.checked ? Qt.rgba(0.95, 0.33, 0.36, 0.2)
+                                                      : (muteButton.hovered ? Theme.surfaceHover : "transparent")
+                        }
+                        contentItem: Item {
+                            Icon {
+                                anchors.centerIn: parent
+                                width: 18
+                                height: 18
+                                name: muteButton.checked ? "mic-off" : "mic"
+                                color: muteButton.checked ? Theme.danger : Theme.textSecondary
+                            }
+                        }
+                    }
                     LevelMeter {
                         objectName: "inputMeter"
-                        Layout.preferredWidth: 140
+                        Layout.preferredWidth: bottomBar.compact ? 80 : bottomBar.meterWidth
                         level: window.app.audio.inputLevel
                     }
                 }

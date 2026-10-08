@@ -276,7 +276,34 @@ void AudioController::check(const Status& status) {
     }
 }
 
+void AudioController::setTransmitMode(int mode) {
+    const auto m = static_cast<engine::TransmitMode>(std::clamp(mode, 0, 2));
+    if (m == settings_.transmitMode) {
+        return;
+    }
+    settings_.transmitMode = m;
+    engine_.transmit().setMode(m);
+    emit settingsChanged();
+}
+
+void AudioController::setReleaseDelayMs(double ms) {
+    settings_.releaseDelayMs = static_cast<float>(std::clamp(ms, 0.0, 1000.0));
+    engine_.transmit().setReleaseDelayMs(settings_.releaseDelayMs);
+    emit settingsChanged();
+}
+
+void AudioController::setMuted(bool muted) {
+    if (muted == muted_) {
+        return;
+    }
+    muted_ = muted;
+    engine_.transmit().setMuted(muted);
+    emit mutedChanged();
+}
+
 void AudioController::applySettingsToEngine() {
+    engine_.transmit().setMode(settings_.transmitMode);
+    engine_.transmit().setReleaseDelayMs(settings_.releaseDelayMs);
     check(engine_.setVoiceEnabled(settings_.voiceEnabled));
     check(engine_.setBackgroundEnabled(settings_.backgroundEnabled));
     check(engine_.setHearMyself(settings_.hearMyself));

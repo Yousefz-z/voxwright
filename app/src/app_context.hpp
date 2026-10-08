@@ -1,8 +1,11 @@
 #pragma once
 
 #include "audio_controller.hpp"
+#include "hotkey_controller.hpp"
+#include "hotkeys/global_hotkeys.hpp"
 #include "notification_model.hpp"
 #include "settings.hpp"
+#include "soundboard_controller.hpp"
 #include "voice_controller.hpp"
 
 #include <vox/devices/audio_backend.hpp>
@@ -28,13 +31,19 @@ class AppContext : public QObject {
     QML_UNCREATABLE("Created by the application")
     Q_PROPERTY(vox::app::AudioController* audio READ audio CONSTANT)
     Q_PROPERTY(vox::app::VoiceController* voices READ voices CONSTANT)
+    Q_PROPERTY(vox::app::SoundboardController* soundboard READ soundboard CONSTANT)
+    Q_PROPERTY(vox::app::HotkeyController* hotkeys READ hotkeys CONSTANT)
     Q_PROPERTY(vox::app::NotificationModel* notifications READ notifications CONSTANT)
     Q_PROPERTY(QString version READ version CONSTANT)
 
 public:
     struct Options {
         std::unique_ptr<devices::AudioBackend> backend;
-        QString settingsPath;
+        /// Folder for settings, soundboards, and imported sounds; empty for
+        /// the platform's per-user folders.
+        QString dataDir;
+        /// Global hotkeys; null for this platform's implementation.
+        std::unique_ptr<GlobalHotkeys> hotkeys;
         /// Why the system audio backend is missing, if it is; `backend` is
         /// then one without devices and the user sees this message.
         std::optional<Error> backendError;
@@ -52,6 +61,9 @@ public:
 
     [[nodiscard]] AudioController* audio() { return audio_.get(); }
     [[nodiscard]] VoiceController* voices() { return voices_.get(); }
+    [[nodiscard]] SoundboardController* soundboard() { return soundboard_.get(); }
+    [[nodiscard]] HotkeyController* hotkeys() { return hotkeyController_.get(); }
+    [[nodiscard]] GlobalHotkeys& globalHotkeys() { return *globalHotkeys_; }
     [[nodiscard]] NotificationModel* notifications() { return &notifications_; }
     [[nodiscard]] static QString version();
 
@@ -71,6 +83,7 @@ signals:
 
 private:
     void scheduleSave();
+    void runHotkeyAction(HotkeyController::Action action);
 
     SettingsStore store_;
     AppSettings settings_;
@@ -80,6 +93,9 @@ private:
     std::vector<plugins::VoicePreset> presets_;
     std::unique_ptr<AudioController> audio_;
     std::unique_ptr<VoiceController> voices_;
+    std::unique_ptr<GlobalHotkeys> globalHotkeys_;
+    std::unique_ptr<HotkeyController> hotkeyController_;
+    std::unique_ptr<SoundboardController> soundboard_;
     QTimer saveTimer_;
 };
 

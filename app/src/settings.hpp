@@ -44,6 +44,13 @@ struct AppSettings {
     float inputGainDb = 0.0F;
     engine::MixLevels mix;
 
+    // Transmit (mute is deliberately not saved: starting muted surprises).
+    engine::TransmitMode transmitMode = engine::TransmitMode::AlwaysOn;
+    float releaseDelayMs = 150.0F;
+
+    /// Global hotkeys for system actions: action key to portable key text.
+    QHash<QString, QString> hotkeys;
+
     // Voices.
     QString currentVoiceId = QStringLiteral("clean-voice");
     QStringList favorites;

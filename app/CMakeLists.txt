@@ -1,5 +1,5 @@
 # The desktop application: Qt Quick UI over the engine.
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Svg Test)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Concurrent Core Gui Qml Quick QuickControls2 Svg Test)
 qt_standard_project_setup(REQUIRES 6.8)
 
 # Everything but main(): controllers, models, settings, and the QML module.
@@ -11,10 +11,20 @@ qt_add_library(vox_app_core STATIC
     src/audio_controller.hpp
     src/device_list_model.cpp
     src/device_list_model.hpp
+    src/hotkey_controller.cpp
+    src/hotkey_controller.hpp
+    src/hotkeys/global_hotkeys.cpp
+    src/hotkeys/global_hotkeys.hpp
+    src/hotkeys/hotkey_keys.cpp
+    src/hotkeys/hotkey_keys.hpp
     src/notification_model.cpp
     src/notification_model.hpp
     src/settings.cpp
     src/settings.hpp
+    src/soundboard_controller.cpp
+    src/soundboard_controller.hpp
+    src/soundboard_store.cpp
+    src/soundboard_store.hpp
     src/voice_controller.cpp
     src/voice_controller.hpp
     src/voice_models.cpp
@@ -22,8 +32,18 @@ qt_add_library(vox_app_core STATIC
 target_include_directories(vox_app_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_definitions(vox_app_core PUBLIC VOX_APP_VERSION="${PROJECT_VERSION}")
 target_link_libraries(vox_app_core PUBLIC
-    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick vox::engine vox::plugins vox::devices)
+    Qt6::Concurrent Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick vox::engine vox::plugins vox::devices)
 vox_target_defaults(vox_app_core)
+
+# Global hotkeys: one implementation per platform.
+if(WIN32)
+    target_sources(vox_app_core PRIVATE src/hotkeys/hotkeys_windows.cpp)
+elseif(APPLE)
+    target_sources(vox_app_core PRIVATE src/hotkeys/hotkeys_macos.cpp)
+    target_link_libraries(vox_app_core PRIVATE "-framework Carbon")
+else()
+    target_sources(vox_app_core PRIVATE src/hotkeys/hotkeys_unsupported.cpp)
+endif()
 
 set_source_files_properties(qml/Theme.qml qml/Icons.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(vox_app_core
@@ -41,12 +61,18 @@ qt_add_qml_module(vox_app_core
         qml/components/Icon.qml
         qml/components/LabeledSlider.qml
         qml/components/LevelMeter.qml
+        qml/components/HotkeyField.qml
         qml/components/NavButton.qml
+        qml/components/PageButton.qml
         qml/components/SearchField.qml
+        qml/components/SoundEditor.qml
+        qml/components/SoundTile.qml
         qml/components/SwitchRow.qml
         qml/components/ToggleChip.qml
         qml/components/VoiceTile.qml
         qml/pages/AudioPage.qml
+        qml/pages/HotkeysPage.qml
+        qml/pages/SoundboardPage.qml
         qml/pages/VoicesPage.qml
     RESOURCES
         icons/app.svg)
@@ -67,8 +93,10 @@ if(VOX_BUILD_TESTS)
         tests/app_test_main.cpp
         tests/app_test_support.hpp
         tests/controller_tests.cpp
+        tests/hotkey_tests.cpp
         tests/model_tests.cpp
         tests/settings_tests.cpp
+        tests/soundboard_tests.cpp
         tests/ui_smoke_tests.cpp)
     target_link_libraries(vox_app_tests PRIVATE
         vox_app_core vox_app_coreplugin Qt6::QuickControls2 Qt6::Svg Qt6::Test vox::testing

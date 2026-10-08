@@ -119,6 +119,33 @@ void VoiceController::setTone(double bassDb, double trebleDb) {
     emit settingsChanged();
 }
 
+void VoiceController::selectRelative(int delta) {
+    if (presets_.empty()) {
+        return;
+    }
+    const std::string current = settings_.currentVoiceId.toStdString();
+    const auto it =
+        std::find_if(presets_.begin(), presets_.end(),
+                     [&current](const plugins::VoicePreset& p) { return p.id == current; });
+    const auto n = static_cast<long>(presets_.size());
+    const long index = it == presets_.end() ? 0 : static_cast<long>(it - presets_.begin());
+    const long next = ((index + delta) % n + n) % n;
+    static_cast<void>(
+        selectVoice(QString::fromStdString(presets_[static_cast<std::size_t>(next)].id)));
+}
+
+void VoiceController::selectRandom() {
+    if (presets_.size() < 2) {
+        return;
+    }
+    const std::string current = settings_.currentVoiceId.toStdString();
+    std::size_t pick = 0;
+    do {
+        pick = static_cast<std::size_t>(random_.bounded(static_cast<quint32>(presets_.size())));
+    } while (presets_[pick].id == current);
+    static_cast<void>(selectVoice(QString::fromStdString(presets_[pick].id)));
+}
+
 void VoiceController::resetCurrentVoice() {
     settings_.voices.remove(settings_.currentVoiceId);
     static_cast<void>(selectVoice(settings_.currentVoiceId));

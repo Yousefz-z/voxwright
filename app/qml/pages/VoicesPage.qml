@@ -10,6 +10,17 @@ Item {
     required property AppContext app
     readonly property VoiceController voices: app.voices
 
+    function showVoiceHotkey() {
+        voiceHotkey.sequence = page.app.hotkeys.voiceHotkey(page.voices.currentVoiceId)
+        voiceHotkey.error = ""
+    }
+
+    Component.onCompleted: showVoiceHotkey()
+    Connections {
+        target: page.voices
+        function onCurrentVoiceChanged() { page.showVoiceHotkey() }
+    }
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 20
@@ -230,6 +241,20 @@ Item {
                 unit: "dB"
                 decimals: 1
                 onMoved: v => page.voices.setTone(page.voices.bassDb, v)
+            }
+
+            Text {
+                Layout.topMargin: 8
+                text: qsTr("Hotkey for this voice")
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontBody
+                color: Theme.textSecondary
+            }
+            HotkeyField {
+                id: voiceHotkey
+                objectName: "voiceHotkey"
+                hotkeys: page.app.hotkeys
+                assign: seq => page.app.hotkeys.assignVoice(page.voices.currentVoiceId, seq)
             }
 
             Item { Layout.fillHeight: true }

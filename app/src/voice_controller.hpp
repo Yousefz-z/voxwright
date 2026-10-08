@@ -9,6 +9,7 @@
 #include <vox/plugins/voice_preset.hpp>
 
 #include <QObject>
+#include <QRandomGenerator>
 #include <QStringList>
 #include <QVariantList>
 #include <QtQml/qqmlregistration.h>
@@ -52,6 +53,10 @@ public:
     Q_INVOKABLE void setTone(double bassDb, double trebleDb);
     /// Macros and tone of the active voice back to the preset's defaults.
     Q_INVOKABLE void resetCurrentVoice();
+    /// Steps through the voices in list order (wrapping); `delta` is +1 or -1.
+    Q_INVOKABLE void selectRelative(int delta);
+    /// Any voice other than the current one.
+    Q_INVOKABLE void selectRandom();
     Q_INVOKABLE void toggleFavorite(const QString& id);
     Q_INVOKABLE bool isFavorite(const QString& id) const;
 
@@ -91,6 +96,7 @@ private:
     NotificationModel& notifications_;
     VoiceListModel list_;
     VoiceFilterModel filter_;
+    QRandomGenerator random_{QRandomGenerator::securelySeeded()};
 };
 
 } // namespace vox::app

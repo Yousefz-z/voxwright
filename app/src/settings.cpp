@@ -68,11 +68,20 @@ QJsonObject toJson(const AppSettings& s) {
                           {"soundsDb", static_cast<double>(s.mix.soundsDb)},
                           {"speechDb", static_cast<double>(s.mix.speechDb)},
                           {"monitorDb", static_cast<double>(s.mix.monitorDb)}};
+    QJsonObject hotkeys;
+    for (auto it = s.hotkeys.cbegin(); it != s.hotkeys.cend(); ++it) {
+        if (!it.value().isEmpty()) {
+            hotkeys.insert(it.key(), it.value());
+        }
+    }
+    const QJsonObject transmit{{"mode", static_cast<int>(s.transmitMode)},
+                               {"releaseDelayMs", static_cast<double>(s.releaseDelayMs)}};
     return {{"version", kFormatVersion},
             {"devices", devices},
             {"input", input},
             {"mix", mix},
-
+            {"transmit", transmit},
+            {"hotkeys", hotkeys},
             {"currentVoice", s.currentVoiceId},
             {"favorites", QJsonArray::fromStringList(s.favorites)},
             {"voices", voices}};
@@ -108,6 +117,16 @@ AppSettings fromJson(const QJsonObject& root) {
     s.mix.soundsDb = number(mix, "soundsDb", d.mix.soundsDb);
     s.mix.speechDb = number(mix, "speechDb", d.mix.speechDb);
     s.mix.monitorDb = number(mix, "monitorDb", d.mix.monitorDb);
+
+    const QJsonObject transmit = root.value("transmit").toObject();
+    const int mode = transmit.value("mode").toInt(0);
+    s.transmitMode = mode >= 0 && mode <= 2 ? static_cast<engine::TransmitMode>(mode)
+                                            : engine::TransmitMode::AlwaysOn;
+    s.releaseDelayMs = number(transmit, "releaseDelayMs", d.releaseDelayMs);
+    const QJsonObject hotkeys = root.value("hotkeys").toObject();
+    for (auto it = hotkeys.begin(); it != hotkeys.end(); ++it) {
+        s.hotkeys.insert(it.key(), it.value().toString());
+    }
 
     s.currentVoiceId = root.value("currentVoice").toString(d.currentVoiceId);
     for (const auto f : root.value("favorites").toArray()) {

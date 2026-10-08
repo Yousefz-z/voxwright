@@ -15,12 +15,17 @@ Development happens in milestones; each one is a commit.
 | 2 | Effect registry (21 blocks) and 54 voice presets, each measured | Done |
 | 3 | Real-time engine, device routing, monitor, gate, noise reduction, push-to-talk | Done |
 | 4 | Qt Quick app shell with device selection and live voice switching | Done |
-| 5 | Soundboard with global hotkeys | Planned |
+| 5 | Soundboard with 18 built-in sounds, import, play modes, and global hotkeys | Done |
 | 6 | Voice designer | Planned |
 | 7 | Tray, settings, start on boot, first-run flow, installers | Planned |
 | 8 | Optional neural voice conversion (behind `VOX_ENABLE_ML`) | Planned |
 
 ![Voxwright voices page](docs/images/screenshots/voices.png)
+
+Features marked Done pass their automated tests on a simulated audio
+device and keyboard. What only real hardware can show (drivers, games,
+latency) is listed in the [manual test checklist](docs/manual-test-checklist.md)
+and has not been verified yet.
 
 ## Documentation
 

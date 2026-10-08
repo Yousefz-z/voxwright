@@ -92,7 +92,8 @@ mute silence the microphone but not the soundboard.
 | Playback callbacks (one per output) | Read the ring buffer. **Pull mode**, when no microphone is open (none selected, or it was unplugged): the virtual mic's callback (or the headphones', if there is no virtual mic) runs the graph itself before reading, so sounds and speech keep playing. | Same rules. |
 | Control thread (Qt main thread) | UI, building voice chains, decoding sounds, settings, `AudioEngine::poll()` at 30 Hz for events, garbage, and device changes | Never touches audio state directly; sends commands. |
 | Device notification thread (OS) | Device added, removed, stopped, or rerouted | Only queues the event under a mutex; the control thread acts on it in `poll()`. |
-| Hotkey thread (Windows) | Low-level keyboard hook message loop | Posts events to the control thread and writes push-to-talk state straight into an atomic so it does not wait for the UI. |
+| Hotkey thread (Windows) | Low-level keyboard hook message loop | Posts events to the control thread and writes push-to-talk and censor state straight into atomics so they do not wait for the UI. Keys are always passed on. On macOS, Carbon delivers hotkeys on the main run loop, which writes the same atomics. |
+| Worker pool (Qt Concurrent) | Decoding imported sounds and rendering the built-in ones | Results return to the control thread, which hands each clip to the engine through the object channel. |
 
 Only one thread runs the graph at a time: the mode is fixed while streams
 run, and every stream is stopped before the engine switches modes or
@@ -291,8 +292,16 @@ Qt 6.8 LTS with Qt Quick (QML), chosen over JUCE:
 | License | LGPL-3 for every module used (dynamic linking satisfies it) | AGPL-3 or a paid license for closed distribution |
 | Audio | Not used (miniaudio handles audio) | Its main strength, not needed here |
 
-Global hotkeys are not part of Qt, so `app/platform/` implements them per
-OS (see [feature-matrix.md](feature-matrix.md#12-global-hotkeys)).
+Global hotkeys are not part of Qt, so `app/src/hotkeys/` implements them
+per OS behind one `GlobalHotkeys` interface: a low-level keyboard hook on
+Windows, Carbon `RegisterEventHotKey` on macOS, and a stub on Linux that
+reports them unavailable (see
+[feature-matrix.md](feature-matrix.md#12-global-hotkeys) and
+[D25](decisions.md#d25-global-hotkeys-never-swallow-keys)). The tests use a
+`ManualHotkeys` implementation that presses keys on demand, so everything
+above the OS call is tested; the Windows and macOS files are compiled only
+by CI on those platforms and are on the
+[manual test checklist](manual-test-checklist.md#soundboard-and-hotkeys-milestone-5).
 
 ### App structure
 
@@ -304,17 +313,24 @@ OS (see [feature-matrix.md](feature-matrix.md#12-global-hotkeys)).
   readout at 30 Hz, and turns engine events into notifications with a
   specific message and action. `VoiceController` owns the voice grid
   model and its filter, the active voice, macro and tone sliders, and
-  favorites. `SettingsStore` saves `AppSettings` as JSON. The QML module
+  favorites. `HotkeyController` checks and dispatches global hotkeys for
+  actions, voices, and sounds, refusing a key already in use with a
+  message naming its owner. `SoundboardController` owns the boards, the
+  sound grid model, importing (copy into the library folder, decode on a
+  worker thread, a specific message per failed file), per-sound options,
+  and the playing state; `SoundboardStore` saves the boards as
+  `soundboards.json`. `SettingsStore` saves `AppSettings` as JSON. The QML module
   `Voxwright` (pages, components, theme, icons) is compiled into the same
   library, so tests run exactly what the app runs.
 * `voxwright` is the executable: `main()` creates the system backend (or,
   if no audio system starts, opens the window anyway with the reason in a
   banner) and loads `Main.qml`.
-* `vox_app_tests` covers the settings store, the models, and the
-  controllers on the fake backend, plus a UI smoke test that loads the
-  real QML offscreen with the software renderer, clicks a voice tile, the
-  hear-myself toggle, and the Audio page, fails on any QML warning, and
-  saves screenshots.
+* `vox_app_tests` covers the settings and soundboard stores, the models,
+  and the controllers on the fake backend (a sound pressed by its
+  hotkey is measured on the virtual-mic bus), plus UI smoke tests
+  that load the real QML offscreen with the software renderer, click
+  through every page, resize the window down to its minimum with a sound
+  playing, fail on any QML warning, and save screenshots.
 
 Icons are line drawings made for Voxwright, stored as SVG path data in
 `Icons.qml` and drawn with Qt Quick Shapes so they take theme colors.
@@ -326,6 +342,8 @@ showed as icons drawn outside the voice grid.
 | Voices | Audio |
 |---|---|
 | ![Voices page](images/screenshots/voices.png) | ![Audio page](images/screenshots/audio.png) |
+| **Soundboard** | **Hotkeys** |
+| ![Soundboard page with a sound playing](images/screenshots/soundboard.png) | ![Hotkeys page in push-to-talk mode](images/screenshots/hotkeys.png) |
 
 Rendered by the UI test on the fake backend (a synthetic 220 Hz tone on
 the microphone), so the meters and latency are real engine output.

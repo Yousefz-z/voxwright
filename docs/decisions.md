@@ -96,10 +96,11 @@ update checks, or online catalogs. Sharing works through exported files.
 
 ## D11. Bundled sounds
 
-*2026-10-07.* The bundled soundboard pack is synthesized from scratch by
-an internal tool at build time. No third-party or meme clips are
-included, so there is nothing to license and nothing binary to store in
-git.
+*2026-10-07.* The bundled soundboard pack is synthesized from scratch. No
+third-party or meme clips are included, so there is nothing to license
+and nothing binary to store in git. Superseded in part by
+[D24](#d24-built-in-sounds-are-rendered-at-startup): the sounds are
+rendered when the app starts, not at build time.
 
 ## D12. Text-to-speech
 
@@ -208,3 +209,37 @@ device, picking a newly installed virtual cable). Native notifications
 (`IMMNotificationClient` on Windows, a CoreAudio property listener on
 macOS) would react faster but add two platform-specific code paths that
 cannot be exercised here; 2 s is fast enough for plugging in a headset.
+
+## D24. Built-in sounds are rendered at startup
+
+*2026-10-08.* The 18 built-in sounds are code (`plugins/src/sound_pack.cpp`)
+that the app renders on a worker thread while the soundboard loads,
+instead of WAV files produced by a build-time tool. The installer
+carries no audio files, a sound renders at the engine rate without
+resampling, and a change to a sound is reviewed as a code diff. Every
+sound is normalized to -18 LUFS (BS.1770) and limited to -1 dBFS; a test
+checks loudness, peak, DC, quiet first and last samples, and that no two
+sounds are near-duplicates. The soundboard file stores a built-in sound
+as `builtin:<id>`, so a later version can improve a sound for everyone.
+
+## D25. Global hotkeys never swallow keys
+
+*2026-10-08.* A global hotkey also reaches the app that has focus: on
+Windows the low-level keyboard hook always passes the key on, and on
+macOS `RegisterEventHotKey` is used without an event tap. Swallowing keys
+would need Accessibility permission on macOS and would break games that
+use the same key. Push-to-talk and the censor key are handled on the
+hook's thread (Windows) or the main run loop (macOS) by writing an atomic
+the audio thread reads, so a busy UI cannot delay them. Linux builds have
+no global hotkeys; the Hotkeys page says so instead of offering fields
+that do nothing.
+
+## D26. The bottom bar keeps its labels while they fit
+
+*2026-10-08.* The on/off chips in the bottom bar show their names when
+the whole bar fits and switch to icons with tooltips when it does not.
+The width check measures the translated names, so a longer language
+switches earlier instead of overflowing. The default window is 1280 px
+wide so the labels show at the default size; the minimum is 960 px. A UI
+test resizes the window from 1280 to 960 px with a sound playing and
+checks that the input meter stays inside the window.

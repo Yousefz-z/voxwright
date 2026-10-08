@@ -5,6 +5,8 @@
 #include <vox/devices/fake_backend.hpp>
 
 #include <QCoreApplication>
+#include <QElapsedTimer>
+#include <QEventLoop>
 #include <QFile>
 #include <QTemporaryDir>
 
@@ -44,17 +46,33 @@ public:
                 file.write(settingsJson.toUtf8());
             }
         }
+        auto hotkeys = std::make_unique<ManualHotkeys>(true);
+        hotkeys_ = hotkeys.get();
         AppContext::Options options;
         options.backend = std::move(backend);
-        options.settingsPath = settingsPath();
+        options.dataDir = dir_.path();
+        options.hotkeys = std::move(hotkeys);
         options.checkMicrophonePermission = false; // fake devices, no app bundle
         context_ = std::make_unique<AppContext>(std::move(options));
     }
 
     [[nodiscard]] AppContext& context() { return *context_; }
     [[nodiscard]] devices::FakeBackend& backend() { return *backend_; }
+    [[nodiscard]] ManualHotkeys& hotkeys() { return *hotkeys_; }
+    [[nodiscard]] QString dataDir() const { return dir_.path(); }
     [[nodiscard]] QString settingsPath() const {
         return dir_.filePath(QStringLiteral("settings.json"));
+    }
+
+    /// Processes events until every sound has loaded (or `timeoutMs` passed).
+    bool waitForSounds(int timeoutMs = 20000) {
+        QElapsedTimer timer;
+        timer.start();
+        while (context_->soundboard()->loadingCount() > 0 && timer.elapsed() < timeoutMs) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        }
+        QCoreApplication::processEvents();
+        return context_->soundboard()->loadingCount() == 0;
     }
 
     /// Runs the devices in lock-step for `seconds` of simulated time, feeding
@@ -84,6 +102,7 @@ public:
 private:
     QTemporaryDir dir_;
     devices::FakeBackend* backend_ = nullptr;
+    ManualHotkeys* hotkeys_ = nullptr;
     std::unique_ptr<AppContext> context_;
     double time_ = 0.0;
     std::size_t position_ = 0;

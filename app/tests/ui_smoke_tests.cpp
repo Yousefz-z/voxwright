@@ -102,7 +102,8 @@ QQuickItem* findItem(QQuickWindow* window, const QString& name) {
 void click(QQuickWindow* window, QQuickItem* item) {
     const QPointF center = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
     QTest::mouseClick(window, Qt::LeftButton, {}, center.toPoint());
-    QCoreApplication::processEvents();
+    // Views create delegates on the next polish and render pass.
+    QTest::qWait(60);
 }
 
 } // namespace
@@ -161,6 +162,59 @@ TEST_CASE("The UI loads, switches voices and pages, and renders", "[app][ui]") {
     const QImage audio = grab(window, QStringLiteral("audio"));
     CHECK(distinctColors(audio) > 40);
 
+    // Soundboard: click the first tile; it plays.
+    REQUIRE(t.waitForSounds());
+    click(window, findItem(window, QStringLiteral("navSoundboard")));
+    auto* soundboard = t.context().soundboard();
+    const quint32 first = soundboard->sounds()->index(0, 0).data(SoundListModel::SlotRole).toUInt();
+    auto* soundTile = findItem(window, QStringLiteral("soundTile_%1").arg(first));
+    REQUIRE(soundTile != nullptr);
+    click(window, soundTile);
+    CHECK(soundboard->playingCount() == 1);
+    t.pump(0.2);
+    const QImage sounds = grab(window, QStringLiteral("soundboard"));
+    CHECK(distinctColors(sounds) > 40);
+    soundboard->stopAll();
+    t.pump(0.1);
+
+    // Hotkeys page in push-to-talk mode shows the talk key field.
+    click(window, findItem(window, QStringLiteral("navHotkeys")));
+    click(window, findItem(window, QStringLiteral("transmitMode1")));
+    CHECK(t.context().audio()->transmitMode() == 1);
+    REQUIRE(t.context()
+                .hotkeys()
+                ->assignAction(QStringLiteral("talk"), QStringLiteral("F13"))
+                .isEmpty());
+    REQUIRE(t.context()
+                .hotkeys()
+                ->assignAction(QStringLiteral("stopSounds"), QStringLiteral("Ctrl+Alt+S"))
+                .isEmpty());
+    auto* talk = findItem(window, QStringLiteral("talkKey"));
+    REQUIRE(talk != nullptr);
+    CHECK(talk->isVisible());
+    static_cast<void>(grab(window, QStringLiteral("hotkeys")));
+
+    // The bottom bar fits at every width down to the minimum, sounds playing,
+    // and keeps the chip labels while there is room for them.
+    soundboard->press(first);
+    auto* meter = findItem(window, QStringLiteral("inputMeter"));
+    auto* bar = findItem(window, QStringLiteral("bottomBar"));
+    REQUIRE(meter != nullptr);
+    REQUIRE(bar != nullptr);
+    for (const int width : {1280, 1180, 1100, 1040, 960}) {
+        window->resize(width, 720);
+        QTest::qWait(60);
+        const QPointF meterEnd = meter->mapToScene(QPointF(meter->width(), 0));
+        INFO("width " << width << ": meter ends at " << meterEnd.x());
+        CHECK(meterEnd.x() <= window->width());
+        if (width >= 1280) {
+            CHECK_FALSE(bar->property("compact").toBool());
+        }
+    }
+    CHECK(bar->property("compact").toBool());
+    static_cast<void>(grab(window, QStringLiteral("compact")));
+    soundboard->stopAll();
+
     INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
     CHECK(collector.warnings().isEmpty());
 }
@@ -186,7 +240,7 @@ TEST_CASE("Notifications appear as banners and their actions run", "[app][ui]") 
     // "open-audio" is a UI action: the window switches to the Audio page.
     t.context().runAction(QStringLiteral("open-audio"));
     QCoreApplication::processEvents();
-    CHECK(window->property("page").toInt() == 1);
+    CHECK(window->property("page").toInt() == window->property("audioPage").toInt());
 
     INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
     CHECK(collector.warnings().isEmpty());

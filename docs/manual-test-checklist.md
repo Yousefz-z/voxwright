@@ -32,7 +32,7 @@ attach logs or measurements to the pull request that records them.
 | A13 | Both | One-hour session: USB microphone and onboard (or separate USB) headphones, which run on different clocks. Speak occasionally; keep hear-myself on. | No clicks, dropouts, or growing delay. The underrun counter in the diagnostics view stays at 0. | | | |
 | A14 | Both | On the slowest supported machine, pick the most expensive voice (see the processing cost table in architecture.md) with noise reduction on. | The processing load readout stays under 30 % and the audio has no dropouts. | | | |
 | A15 | Both | With laptop speakers (not headphones) as the monitor, enable hear-myself and turn the volume up until it howls. | Within about a second hear-myself switches off by itself and the app explains why. | | | |
-| A16 | Both | Enable push-to-talk with the default 150 ms release delay. Speak while holding the key; release it mid-word. | Nothing is sent while the key is up; the end of the word after release is still sent; no clicks at either edge. (The global hotkey itself is checked in milestone 5.) | | | |
+| A16 | Both | Enable push-to-talk with the default 150 ms release delay. Speak while holding the key; release it mid-word. | Nothing is sent while the key is up; the end of the word after release is still sent; no clicks at either edge. (The global talk key itself is row H3.) | | | |
 | A17 | Both | Turn noise reduction on next to a fan or air conditioner, then off. | The fan noise drops clearly while speech stays natural; toggling never clicks. | | | |
 
 ## Application window (milestone 4)
@@ -46,6 +46,28 @@ attach logs or measurements to the pull request that records them.
 | U5 | Both | Run in a virtual machine without GPU acceleration, or over remote desktop. | The window renders (software renderer); voice icons stay inside the scrolling grid. | | | |
 | U6 | Both | Change settings, quit, and start again. Then replace `settings.json` with garbage text and start again. | Settings come back as left. With the damaged file, a "Settings reset" banner appears and `settings.json.damaged` keeps the old content. | | | |
 | U7 | Both | Start with no virtual cable installed; install VB-CABLE or BlackHole while the app runs. | The "No virtual microphone installed" banner links to the official page; after installing, the app picks the cable and says which microphone to choose in chat apps. | | | |
+
+## Soundboard and hotkeys (milestone 5)
+
+The Windows hook (`app/src/hotkeys/hotkeys_windows.cpp`) and the macOS
+Carbon code (`app/src/hotkeys/hotkeys_macos.cpp`) are compiled by CI on
+those platforms but have never run. Everything above them is tested with
+simulated key presses.
+
+| # | Platform | Steps | Expected | Date | Tester | Result |
+|---|---|---|---|---|---|---|
+| H1 | Both | Assign Ctrl+Alt+V to "Voice changer on or off". Focus another app (a browser, then a full-screen game) and press it. | The voice changer toggles each time; the other app also receives the key. | | | |
+| H2 | Windows 11 | Repeat H1 in a game that runs as administrator, and in one with anti-cheat (for example a competitive shooter). | Record whether the key works. A low-level hook in a non-elevated app cannot see keys sent to an elevated window; if so, the Hotkeys page should say so (follow-up). | | | |
+| H3 | Both | Push-to-talk with F9 as the talk key. Hold and release it while a chat app listens, with a game focused. | Voice is sent only while held, plus the release delay. Holding the key does not auto-repeat into presses. | | | |
+| H4 | macOS 13+ | Assign hotkeys without granting any Accessibility or Input Monitoring permission. | Hotkeys work; no permission prompt appears. | | | |
+| H5 | Both | Assign F2 in Voxwright, then assign the same key in another app that registers global hotkeys (OBS, Discord). | Record which app wins. On macOS, a key already registered by another app makes Voxwright report that the key is in use. | | | |
+| H6 | Both | Give a voice a hotkey on the Voices page, switch to another voice, and press the key while a game has focus. | The voice switches with the usual 20 ms crossfade and the bottom bar shows its name. | | | |
+| H7 | Windows 11 | Use a keyboard with a non-US layout (German QWERTZ, French AZERTY) and assign Ctrl+Z and Ctrl+1. | The key that is labeled Z or 1 on that keyboard triggers it. | | | |
+| S1 | Both | Play each built-in sound into Discord while a second account listens, voice changer on. | Every sound is heard at a similar loudness, without distortion, and does not pass through the voice effect. | | | |
+| S2 | Both | Drag WAV, MP3, FLAC, and OGG files from Explorer or Finder onto the soundboard. Then a 60 MB file, an 11-minute file, a renamed text file, and a file on a disconnected network drive. | The four files import and play. Each problem file gets its own message saying what is wrong and what to do; the others still import. | | | |
+| S3 | Both | Set a sound to "Others only" and play it with hear-myself on. | The listener hears it; you do not. | | | |
+| S4 | Both | Hold a "Play while held" sound's hotkey for two seconds while in a game. | It plays while held and stops on release without a click. | | | |
+| S5 | Both | Quit with sounds and boards changed, start again; then corrupt `soundboards.json`. | Boards, sounds, and hotkeys come back. With the damaged file, a banner explains it and the default boards appear. | | | |
 
 ## Voices (milestone 2)
 

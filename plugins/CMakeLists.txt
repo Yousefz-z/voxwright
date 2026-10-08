@@ -19,6 +19,7 @@ add_library(vox_plugins STATIC
     src/builtin_effects.cpp
     src/effect.cpp
     src/registry.cpp
+    src/sound_pack.cpp
     src/voice_chain.cpp
     src/voice_library.cpp
     src/voice_preset.cpp
@@ -32,6 +33,7 @@ if(VOX_BUILD_TESTS)
     add_executable(vox_plugins_tests
         tests/preset_tests.cpp
         tests/registry_tests.cpp
+        tests/sound_pack_tests.cpp
         tests/voice_metrics.cpp
         tests/voice_tests.cpp)
     target_link_libraries(vox_plugins_tests PRIVATE vox::plugins vox::testing Catch2::Catch2WithMain)

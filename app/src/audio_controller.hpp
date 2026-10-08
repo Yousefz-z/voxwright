@@ -60,6 +60,11 @@ class AudioController : public QObject {
         double monitorLevelDb READ monitorLevelDb WRITE setMonitorLevelDb NOTIFY settingsChanged)
     Q_PROPERTY(int bufferFrames READ bufferFrames WRITE setBufferFrames NOTIFY settingsChanged)
     Q_PROPERTY(bool exclusiveMode READ exclusiveMode WRITE setExclusiveMode NOTIFY settingsChanged)
+    /// 0 always on, 1 push-to-talk, 2 push-to-mute.
+    Q_PROPERTY(int transmitMode READ transmitMode WRITE setTransmitMode NOTIFY settingsChanged)
+    Q_PROPERTY(
+        double releaseDelayMs READ releaseDelayMs WRITE setReleaseDelayMs NOTIFY settingsChanged)
+    Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
 
     Q_PROPERTY(double inputLevel READ inputLevel NOTIFY metersChanged)
     Q_PROPERTY(double inputLevelDb READ inputLevelDb NOTIFY metersChanged)
@@ -140,6 +145,14 @@ public:
     void setBufferFrames(int frames);
     [[nodiscard]] bool exclusiveMode() const { return settings_.exclusive; }
     void setExclusiveMode(bool on);
+    [[nodiscard]] int transmitMode() const { return static_cast<int>(settings_.transmitMode); }
+    void setTransmitMode(int mode);
+    [[nodiscard]] double releaseDelayMs() const {
+        return static_cast<double>(settings_.releaseDelayMs);
+    }
+    void setReleaseDelayMs(double ms);
+    [[nodiscard]] bool muted() const { return muted_; }
+    void setMuted(bool muted);
 
     [[nodiscard]] double inputLevel() const { return meterPosition(inputDb_); }
     [[nodiscard]] double inputLevelDb() const { return inputDb_; }
@@ -155,6 +168,7 @@ signals:
     void devicesChanged();
     void settingsChanged();
     void metersChanged();
+    void mutedChanged();
     void soundFinished(quint32 id);
     void speechFinished();
 
@@ -177,6 +191,7 @@ private:
     DeviceListModel monitorDevices_;
     QTimer pollTimer_;
     bool checkPermission_ = true;
+    bool muted_ = false;
     engine::EngineStats stats_;
     double inputDb_ = -120.0;
     double outputDb_ = -120.0;
