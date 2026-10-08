@@ -1,6 +1,6 @@
 # The desktop application: Qt Quick UI over the engine.
 find_package(Qt6 6.8 REQUIRED COMPONENTS
-    Concurrent Core Gui Multimedia Qml Quick QuickControls2 Svg Test TextToSpeech Widgets)
+    Concurrent Core Gui Multimedia Network Qml Quick QuickControls2 Svg Test TextToSpeech Widgets)
 qt_standard_project_setup(REQUIRES 6.8)
 
 # Everything but main(): controllers, models, settings, and the QML module.
@@ -28,6 +28,8 @@ qt_add_library(vox_app_core STATIC
     src/notification_model.hpp
     src/platform/autostart.cpp
     src/platform/autostart.hpp
+    src/platform/single_instance.cpp
+    src/platform/single_instance.hpp
     src/settings.cpp
     src/settings.hpp
     src/soundboard_controller.cpp
@@ -49,8 +51,8 @@ qt_add_library(vox_app_core STATIC
 target_include_directories(vox_app_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_definitions(vox_app_core PUBLIC VOX_APP_VERSION="${PROJECT_VERSION}")
 target_link_libraries(vox_app_core PUBLIC
-    Qt6::Concurrent Qt6::Core Qt6::Gui Qt6::Multimedia Qt6::Qml Qt6::Quick Qt6::TextToSpeech
-    Qt6::Widgets vox::engine vox::plugins vox::devices)
+    Qt6::Concurrent Qt6::Core Qt6::Gui Qt6::Multimedia Qt6::Network Qt6::Qml Qt6::Quick
+    Qt6::TextToSpeech Qt6::Widgets vox::engine vox::plugins vox::devices)
 vox_target_defaults(vox_app_core)
 if(VOX_ENABLE_ML)
     target_link_libraries(vox_app_core PUBLIC vox::ml)

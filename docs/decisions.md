@@ -389,3 +389,14 @@ program's `bin` folder (CMake's InstallRequiredSystemLibraries), where
 Windows loads them before any system wide copy. The cost is a few
 megabytes per install and no automatic runtime updates through Windows
 Update; a new runtime arrives with the next Voxwright release.
+
+## D40. One Voxwright per user
+
+*2026-10-08.* Starting Voxwright while it ran, for example hidden in the
+tray, started a second copy: two engines played into the virtual cable,
+two tray icons appeared, and every global hotkey fired twice. The first
+instance now holds a lock file in the user's temporary folder and listens
+on a local socket (Qt Network); a later start connects to it, which shows
+the running window, and ends. A start at sign-in (`--minimized`) while
+Voxwright already runs ends without showing it. A lock left by a process
+that is gone is taken over, so a crash does not block the next start.

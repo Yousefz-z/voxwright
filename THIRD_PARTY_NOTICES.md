@@ -7,7 +7,7 @@ projects' repositories at the pinned commits listed in
 
 | Component | Use | License |
 |---|---|---|
-| Qt 6.8.3 (Core, Gui, Qml, Quick, Quick Controls, Svg, Multimedia, TextToSpeech, Widgets) | User interface, tray, text-to-speech | LGPL-3.0, dynamically linked |
+| Qt 6.8.3 (Core, Gui, Network, Qml, Quick, Quick Controls, Svg, Multimedia, TextToSpeech, Widgets) | User interface, tray, text-to-speech, single instance | LGPL-3.0, dynamically linked |
 | miniaudio 0.11.25 | Audio device I/O and file decoding | MIT-0 or public domain (Unlicense) |
 | stb_vorbis (bundled with miniaudio) | OGG Vorbis decoding | MIT or public domain |
 | libsamplerate 0.2.2 | Sample-rate conversion | BSD-2-Clause |

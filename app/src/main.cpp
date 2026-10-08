@@ -1,4 +1,5 @@
 #include "app_context.hpp"
+#include "platform/single_instance.hpp"
 #include "system_controller.hpp"
 
 #include <vox/devices/audio_backend.hpp>
@@ -22,6 +23,17 @@ int main(int argc, char* argv[]) {
     QApplication::setQuitOnLastWindowClosed(false);
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
+    // One Voxwright per user: starting it again shows the running window
+    // instead of opening the devices a second time. A start at sign-in while
+    // it already runs just ends.
+    vox::app::SingleInstance instance(vox::app::SingleInstance::defaultKey());
+    if (!instance.isPrimary()) {
+        if (!QApplication::arguments().contains(vox::app::SystemController::minimizedArgument())) {
+            static_cast<void>(instance.activatePrimary());
+        }
+        return 0;
+    }
+
     vox::app::AppContext::Options options;
     if (auto backend = vox::devices::createSystemBackend()) {
         options.backend = std::move(backend).value();
@@ -31,6 +43,8 @@ int main(int argc, char* argv[]) {
         options.backendError = backend.error();
     }
     vox::app::AppContext context(std::move(options));
+    QObject::connect(&instance, &vox::app::SingleInstance::activationRequested, context.tray(),
+                     &vox::app::TrayController::showWindowRequested);
     context.tray()->show();
     const bool startHidden =
         QApplication::arguments().contains(vox::app::SystemController::minimizedArgument()) &&

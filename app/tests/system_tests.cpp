@@ -1,5 +1,6 @@
 #include "app_test_support.hpp"
 #include "platform/autostart.hpp"
+#include "platform/single_instance.hpp"
 #include "system_controller.hpp"
 #include "tray_controller.hpp"
 
@@ -12,7 +13,10 @@
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
+#include <QUuid>
 #include <QXmlStreamReader>
+
+#include <memory>
 
 using namespace vox::app;
 using namespace vox::app::test;
@@ -222,4 +226,26 @@ TEST_CASE("Resetting puts every setting back and offers a restart", "[app][syste
     REQUIRE(ctx.notifications()->contains(QStringLiteral("settings-reset")));
     const QString saved = readAll(t.settingsPath());
     CHECK_FALSE(saved.contains(QStringLiteral("cathedral")));
+}
+
+TEST_CASE("Starting again asks the running instance for its window", "[app][system]") {
+    // A key of its own, so the test never meets a running Voxwright.
+    const QString key =
+        QStringLiteral("voxwright-test-") + QUuid::createUuid().toString(QUuid::Id128).left(12);
+    auto first = std::make_unique<SingleInstance>(key);
+    REQUIRE(first->isPrimary());
+    QSignalSpy activations(first.get(), &SingleInstance::activationRequested);
+    {
+        SingleInstance second(key);
+        CHECK_FALSE(second.isPrimary());
+        CHECK(second.activatePrimary(2000));
+    }
+    // The request arrives through the event loop, after the second has left.
+    CHECK((activations.count() == 1 || activations.wait(2000)));
+    CHECK(activations.count() == 1);
+
+    // Once the running instance is gone, the next start runs.
+    first.reset();
+    const SingleInstance next(key);
+    CHECK(next.isPrimary());
 }
