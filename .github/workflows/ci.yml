@@ -1,7 +1,10 @@
 name: CI
 
 on:
+  # Branches get CI through their pull request, so pushes trigger it only on
+  # main; otherwise every push to a pull request's branch runs it twice.
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
