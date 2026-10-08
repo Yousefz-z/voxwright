@@ -19,6 +19,9 @@ RowLayout {
         Layout.fillWidth: true
         spacing: 2
         Text {
+            // Filling lets the column grow, so the switch sits at the edge
+            // even without a detail line.
+            Layout.fillWidth: true
             text: root.label
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontBody

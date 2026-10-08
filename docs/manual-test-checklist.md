@@ -79,6 +79,23 @@ simulated key presses.
 | D4 | Both | On the slowest supported machine, build a voice with 12 effects including the vocoder, harmonizer, and reverb, with noise reduction on. | The processing load readout stays under 30 % and the audio has no dropouts. | | | |
 | D5 | Both | Use the designer with the keyboard only, then with Narrator or VoiceOver. | Every effect, setting, and button can be reached and is announced by name. | | | |
 
+## Desktop integration and installers (milestone 7)
+
+| # | Platform | Steps | Expected | Date | Tester | Result |
+|---|---|---|---|---|---|---|
+| T1 | Windows 11 | Install with the setup program from CI as a standard user, start it from the Start menu, then uninstall from Settings, Apps. | Installs without administrator rights; the Start menu entry and icon appear; uninstall removes the program and the sign-in entry. SmartScreen warns (unsigned). | | | |
+| T2 | macOS 13+ | Open the disk image, drag Voxwright to Applications, open it with right-click, Open. | It starts; the Dock and the app switcher show the Voxwright icon; Gatekeeper warns once (unsigned). | | | |
+| T3 | Both | First start on a clean account with no virtual cable, then install VB-CABLE or BlackHole and press Check again. | The setup guide opens, links to the official download page, then finds the cable. | | | |
+| T4 | Both | In the setup guide (or Settings), press "Test the virtual microphone" with VB-CABLE or BlackHole installed. Then select another output on the Audio page and test again. | Passes with the cable selected; with another output it reports that nothing arrived. | | | |
+| T5 | Windows 11 | The tray icon in the notification area: open the menu, toggle every switch, pick a favorite voice, quit. | The menu matches the window's state and each item works. | | | |
+| T6 | macOS | Same as T5 with the menu bar icon. | Same. | | | |
+| T7 | Both | Close the window with the tray available, then reopen from the tray; turn "Keep running" off and close again. | First close hides the window with a one-time notification; with the option off, closing quits. | | | |
+| T8 | Both | Turn on "Start when you sign in" and "Start hidden in the tray"; sign out and in. Then turn start at sign-in off and sign out and in again. | Voxwright starts hidden in the tray the first time and not at all the second time. On macOS it is listed under Login Items. | | | |
+| T9 | Both | Text to speech with each system voice offered, with "Through my voice effect" off and on, while a second account listens on Discord. | The text is heard clearly in the chosen voice, through the voice effect when switched on. | | | |
+| T10 | Both | Follow each app path on the Settings page in current Discord, Zoom, Teams, and OBS. | Each path leads to the microphone setting; note any app that moved it. | | | |
+| T11 | Windows 11 | Check the file properties of Voxwright.exe. | Version 0.1.0, product name and description filled in, the Voxwright icon. | | | |
+| T12 | macOS 13+ | Build `drivers/macos`, install it as in its README, and run Voxwright's virtual microphone check against "Voxwright Virtual Microphone". | Record whether it loads (Audio MIDI Setup), passes the check, and survives a `coreaudiod` restart. Untested so far. | | | |
+
 ## Voices (milestone 2)
 
 | # | Platform | Steps | Expected | Date | Tester | Result |

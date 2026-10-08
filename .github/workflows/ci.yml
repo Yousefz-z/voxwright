@@ -113,6 +113,24 @@ jobs:
         run: cmake --build --preset windows
       - name: Test
         run: ctest --preset windows
+      - name: Install into a staging folder (deploys the Qt runtime)
+        run: cmake --install build/windows --prefix stage
+      - name: Build the installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path CMakeLists.txt -Pattern 'VERSION ([0-9]+\.[0-9]+\.[0-9]+)').Matches[0].Groups[1].Value
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
+          }
+          & $iscc "/DAppVersion=$version" "/DSourceDir=$PWD\stage" "/DOutputDir=$PWD\dist" installer\windows\voxwright.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxwright-windows-installer
+          path: dist/*.exe
+          if-no-files-found: error
 
   macos:
     name: macOS ${{ matrix.preset }}
@@ -148,3 +166,32 @@ jobs:
         run: cmake --build --preset ${{ matrix.preset }}
       - name: Test
         run: ctest --preset ${{ matrix.preset }}
+      - name: Disk image
+        if: matrix.preset == 'macos'
+        run: |
+          version=$(sed -n 's/^ *VERSION \([0-9.]*\)$/\1/p' CMakeLists.txt | head -1)
+          cmake --install build/macos --prefix stage
+          installer/macos/make-dmg.sh stage/Voxwright.app "$version" dist
+      - name: Upload the disk image
+        if: matrix.preset == 'macos'
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxwright-macos-dmg
+          path: dist/*.dmg
+          if-no-files-found: error
+
+  macos-driver:
+    name: macOS driver (compile only)
+    runs-on: macos-14
+    # The virtual microphone driver was written without access to a Mac and
+    # has never been loaded or tested (drivers/macos/README.md). This job
+    # only shows whether it compiles; it does not gate the build.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: brew install ninja
+      - name: Configure
+        run: cmake -S drivers/macos -B build/driver -G Ninja
+      - name: Build
+        run: cmake --build build/driver

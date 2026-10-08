@@ -36,6 +36,7 @@ class AudioController : public QObject {
         QString monitorDeviceId READ monitorDeviceId WRITE setMonitorDeviceId NOTIFY devicesChanged)
     Q_PROPERTY(bool virtualCableFound READ virtualCableFound NOTIFY devicesChanged)
     Q_PROPERTY(QString chatAppMicrophoneName READ chatAppMicrophoneName NOTIFY devicesChanged)
+    Q_PROPERTY(QString virtualMicName READ virtualMicName NOTIFY devicesChanged)
     Q_PROPERTY(QString virtualCableProduct READ virtualCableProduct CONSTANT)
     Q_PROPERTY(QString virtualCableUrl READ virtualCableUrl CONSTANT)
 
@@ -104,6 +105,8 @@ public:
     void setMonitorDeviceId(const QString& id);
     [[nodiscard]] bool virtualCableFound() const;
     [[nodiscard]] QString chatAppMicrophoneName() const;
+    /// The device Voxwright plays into ("CABLE Input" for VB-CABLE).
+    [[nodiscard]] QString virtualMicName() const { return settings_.virtualMicName; }
     [[nodiscard]] static QString virtualCableProduct();
     [[nodiscard]] static QString virtualCableUrl();
 

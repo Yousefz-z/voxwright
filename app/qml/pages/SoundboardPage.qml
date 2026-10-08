@@ -144,6 +144,11 @@ Item {
                 }
             }
         }
+
+        SpeechPanel {
+            Layout.fillWidth: true
+            speech: page.app.speech
+        }
     }
 
     FileDialog {

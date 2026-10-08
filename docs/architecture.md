@@ -46,8 +46,8 @@ through Catch2 without a UI or audio device.
 | `dsp/` | Biquad/SVF filters, delay lines, LFOs, envelope followers, pitch tracker, PSOLA pitch shifter, spectral shifter, vocoder, FDN reverb, dynamics, distortion, modulation effects, ambience synthesis, loudness meter, feedback detector, RNNoise wrapper, streaming and one-shot resamplers | Signalsmith Stretch (MIT), RNNoise (BSD-3), libsamplerate (BSD-2) |
 | `plugins/` | Effect descriptors (parameter metadata), factory registry, node wrappers, preset and macro model, JSON preset parser, 54 voice presets | nlohmann/json (MIT) |
 | `engine/` | Processing graph, voice chain hot swap, transmit control (mute, push-to-talk, push-to-mute, censor), soundboard player, speech player, mixer buses, output limiters, per-output drift compensation, device loss and recovery, latency breakdown, metering, command and event queues | none |
-| `devices/` | `AudioBackend` interface, miniaudio backend with per-failure error mapping, fake backend (simulated time, injected failures and disconnects), audio file decoding, virtual cable detection; loopback test in milestone 7 | miniaudio (MIT-0) |
-| `app/` | QML UI, view models, global hotkeys, tray, autostart, settings store, text-to-speech capture, first-run flow | Qt 6.8 (LGPL-3) |
+| `devices/` | `AudioBackend` interface, miniaudio backend with per-failure error mapping, fake backend (simulated time, injected failures and disconnects), audio file decoding, virtual cable detection | miniaudio (MIT-0) |
+| `app/` | QML UI, view models, global hotkeys, tray, autostart, settings store, text to speech, setup guide with the virtual microphone check | Qt 6.8 (LGPL-3) |
 | `drivers/` | macOS AudioServerPlugIn loopback driver source; Windows driver design | none |
 | `tools/` | Internal development tools only: benchmarks, sound synthesis for the bundled sound pack, analysis scripts, ML export and benchmark. Not shipped. | none |
 
@@ -273,9 +273,10 @@ The first-party driver path is designed but not shippable from this
 environment:
 
 * `drivers/macos/`: AudioServerPlugIn loopback device in C (one output
-  stream, one input stream, a shared ring buffer inside the plug-in).
-  Building requires Xcode; installing requires a Developer ID signature
-  and notarization.
+  stream, one input stream, a ring buffer indexed by sample time inside the
+  plug-in). Written without access to a Mac; CI compiles it in a job that
+  does not gate the build, and nothing has loaded or tested it. Installing
+  requires a Developer ID signature and notarization.
 * `drivers/windows/README.md`: design for a WaveRT virtual audio device
   pair (render and capture) based on the Windows driver samples,
   requiring the WDK, an EV certificate, and Microsoft attestation
@@ -354,6 +355,25 @@ showed as icons drawn outside the voice grid.
 
 Rendered by the UI test on the fake backend (a synthetic 220 Hz tone on
 the microphone), so the meters and latency are real engine output.
+
+### Desktop integration
+
+* `TrayController`: the tray icon and its menu ([D30](decisions.md#d30-the-tray-uses-qt-widgets)).
+* `SystemController` with `Autostart`: start at sign-in (Run key, LaunchAgent,
+  or XDG file), start hidden (`--minimized`), keep running when closed, and
+  the first-run flag.
+* `SpeechController`: text to speech through `QTextToSpeech::synthesize()`,
+  converted to 48 kHz mono for the engine's speech channel.
+* `VirtualMicCheck`: the loopback check ([D33](decisions.md#d33-the-virtual-microphone-check-listens-where-chat-apps-listen)).
+* Packaging: `cmake --install` produces a self-contained tree (Qt deployed
+  by `qt_generate_deploy_qml_app_script`, licenses in `licenses/`), which
+  `installer/windows/voxwright.iss` and `installer/macos/make-dmg.sh` turn
+  into an installer and a disk image in CI ([D32](decisions.md#d32-installers-are-built-by-ci-and-are-not-signed-yet)).
+  The program icon is rendered from `app/icons/app.svg` by `tools/icons`.
+
+| Setup guide | Settings |
+|---|---|
+| ![Setup guide, virtual microphone step after a passed check](images/screenshots/first-run-cable.png) | ![Settings page](images/screenshots/settings.png) |
 
 ## Effects as data
 

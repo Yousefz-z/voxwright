@@ -38,6 +38,13 @@ add_subdirectory(plugins)
 add_subdirectory(devices)
 add_subdirectory(engine)
 
+if(VOX_BUILD_APP)
+    # Found once here so every directory shares Qt's targets; Qt's deployment
+    # support (cmake --install) only sees modules found on the same targets.
+    find_package(Qt6 6.8 REQUIRED COMPONENTS
+        Concurrent Core Gui Multimedia Qml Quick QuickControls2 Svg Test TextToSpeech Widgets)
+endif()
+
 if(VOX_BUILD_TOOLS)
     add_subdirectory(tools)
 endif()

@@ -51,6 +51,15 @@ struct AppSettings {
     /// Global hotkeys for system actions: action key to portable key text.
     QHash<QString, QString> hotkeys;
 
+    // Desktop integration.
+    bool firstRunDone = false;
+    bool closeToTray = true;
+    bool startMinimized = false;
+
+    // Text to speech.
+    QString speechVoice; ///< Name of the system voice; empty for the default.
+    bool speechThroughVoice = false;
+
     // Voices.
     QString currentVoiceId = QStringLiteral("clean-voice");
     QStringList favorites;

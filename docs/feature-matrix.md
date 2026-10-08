@@ -123,15 +123,15 @@ Module names refer to the layout in [architecture.md](architecture.md):
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
-| Virtual microphone device that chat apps select as input | M | Baseline: guided setup for VB-CABLE (Windows) and BlackHole 2ch (macOS). The engine writes to the cable's render side; chat apps record from its capture side. First-run flow detects the cable by device name, links to the official download page, re-scans, and runs a loopback test (plays a chirp into the cable, records it back, reports level and latency). |
-| Vendor's own branded driver | N | Engine treats the virtual mic as an ordinary output device, so a first-party loopback driver drops in with no engine changes. Source for a macOS AudioServerPlugIn loopback driver lives in `drivers/macos/`; the Windows design is in `drivers/windows/README.md`. Neither can be built, signed, or tested in this sandbox. |
-| Per-app setup guides (Discord, Zoom, Teams, OBS, games) | M | In-app help panel with the exact setting path per app. |
+| Virtual microphone device that chat apps select as input | M | Baseline: guided setup for VB-CABLE (Windows) and BlackHole 2ch (macOS). The engine writes to the cable's render side; chat apps record from its capture side. The setup guide detects the cable by device name, links to the official download page, re-scans, and runs a loopback check: the engine plays a 0.3 s chirp into the cable while Voxwright records the cable's recording side, and a normalized cross-correlation says whether the chirp arrived, nothing arrived, or something else arrived ([D33](decisions.md#d33-the-virtual-microphone-check-listens-where-chat-apps-listen)). |
+| Vendor's own branded driver | N | Engine treats the virtual mic as an ordinary output device, so a first-party loopback driver drops in with no engine changes. Source for a macOS AudioServerPlugIn loopback driver lives in `drivers/macos/` (CI compiles it; it has never been loaded or tested); the Windows design is in `drivers/windows/README.md`. Neither can be signed or tested in this environment. |
+| Per-app setup guides (Discord, Zoom, Teams, OBS, games) | M | Settings page card listing where each app keeps its microphone setting, with the exact device name to choose. The menu paths are on the manual checklist (T10) because apps move them. |
 
 ## 10. Text-to-speech
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
-| Type text, speak it into the virtual mic in a chosen voice | N | Qt TextToSpeech `synthesize()` (Qt 6.6+) renders platform voices (SAPI/WinRT on Windows, AVSpeechSynthesizer on macOS) to PCM, which is resampled and mixed into the engine's TTS channel. Optional "apply my current voice effect" routes it through the active chain. |
+| Type text, speak it into the virtual mic in a chosen voice | N | Text to speech panel under the soundboard. Qt TextToSpeech `synthesize()` renders a system voice (SAPI or WinRT on Windows, AVSpeechSynthesizer on macOS, speech-dispatcher or flite on Linux) to PCM, which is converted to mono, resampled to 48 kHz, and played on the engine's speech channel; "Through my voice effect" routes it through the active voice. A test speaks a sentence with flite and measures it at the virtual cable. |
 | Text-to-song | X | No equivalent platform capability; not core. |
 
 ## 11. Presets and favorites
@@ -158,12 +158,13 @@ Module names refer to the layout in [architecture.md](architecture.md):
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
-| Settings sections: Audio, Mixer, Hotkeys, General, Advanced | M | QML settings pages backed by a typed `AppSettings` struct saved as JSON by `SettingsStore`: atomic writes, and a damaged file is set aside and reported instead of crashing or silently resetting ([decisions.md](decisions.md#d22-settings-are-a-json-file)). |
-| Start with the operating system | M | Windows: `HKCU\...\CurrentVersion\Run` entry. macOS: `SMAppService.mainApp` (macOS 13+). Linux: XDG autostart file. |
-| Start minimized | M | Launch flag added to the autostart entry. |
+| Settings sections: Audio, Mixer, Hotkeys, General, Advanced | M | Audio page (devices, input processing, mix, latency, buffer), Hotkeys page, and Settings page (startup and tray, virtual microphone check, app setup, setup guide, advanced). |
+| Settings storage | M | A typed `AppSettings` struct saved as JSON by `SettingsStore`: atomic writes, and a damaged file is set aside and reported instead of crashing or silently resetting ([decisions.md](decisions.md#d22-settings-are-a-json-file)). |
+| Start with the operating system | M | Windows: a value in `HKCU\...\CurrentVersion\Run` (removed by the uninstaller). macOS: a LaunchAgent in `~/Library/LaunchAgents` ([D31](decisions.md#d31-start-at-login-on-macos-uses-a-launchagent)). Linux: an XDG autostart file. All three are written by the same tested code with per-system quoting. |
+| Start minimized | M | "Start hidden in the tray" adds `--minimized` to the sign-in entry; the window then stays hidden until opened from the tray. |
 | Light and dark theme | N | Dark default, light alternative. |
-| First-run flow | M | Pages: welcome, microphone permission (macOS), pick microphone with live meter, pick headphones with test tone, virtual cable detection and install guide with loopback test, chat app setup, done. |
-| Reset all settings, open logs folder | M | Advanced page. |
+| First-run flow | M | Setup guide on first start: welcome, microphone with live meter (macOS asks for microphone permission when audio starts), virtual microphone with download link, re-scan, and the loopback check, headphones with hear-myself, then where to go next. It can be run again from Settings. |
+| Reset all settings, open logs folder | M | Settings page, Advanced: "Reset all settings" (after a confirmation; the user's voices and soundboards are kept, and a restart is offered) and "Open the settings folder". Voxwright writes no log files, so there is no logs folder. |
 | Accounts, login, telemetry, update checks | X | No account system, no network access by the app. |
 | Localization | N | All strings wrapped in `qsTr`; English only at first. |
 
@@ -171,8 +172,8 @@ Module names refer to the layout in [architecture.md](architecture.md):
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
-| Tray icon with menu | M | `QSystemTrayIcon`: show/hide, voice changer, hear myself, mute, background effects, favorite voices submenu, stop all sounds, quit. |
-| Minimize to tray / close to tray | M | General settings: "minimize to tray" and "close button hides to tray". First time the window hides, a tray notification explains where the app went. |
+| Tray icon with menu | M | `QSystemTrayIcon` ([D30](decisions.md#d30-the-tray-uses-qt-widgets)): open, voice changer, hear myself, background effects, mute, favorite voices submenu, stop all sounds, quit. Checkmarks follow the switches wherever they change. |
+| Minimize to tray / close to tray | M | Settings: "Keep running when the window is closed" (on by default where a tray exists). The first time the window hides, a tray notification says where the app went. Minimizing keeps the normal taskbar or Dock behavior. |
 | Tray icon reflects state (muted, bypassed) | N | Icon variants for muted and voice-changer-off. |
 
 ## 15. Other observed features

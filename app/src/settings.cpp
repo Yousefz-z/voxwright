@@ -76,7 +76,13 @@ QJsonObject toJson(const AppSettings& s) {
     }
     const QJsonObject transmit{{"mode", static_cast<int>(s.transmitMode)},
                                {"releaseDelayMs", static_cast<double>(s.releaseDelayMs)}};
+    const QJsonObject app{{"firstRunDone", s.firstRunDone},
+                          {"closeToTray", s.closeToTray},
+                          {"startMinimized", s.startMinimized}};
+    const QJsonObject speech{{"voice", s.speechVoice}, {"throughVoice", s.speechThroughVoice}};
     return {{"version", kFormatVersion},
+            {"app", app},
+            {"speech", speech},
             {"devices", devices},
             {"input", input},
             {"mix", mix},
@@ -127,6 +133,14 @@ AppSettings fromJson(const QJsonObject& root) {
     for (auto it = hotkeys.begin(); it != hotkeys.end(); ++it) {
         s.hotkeys.insert(it.key(), it.value().toString());
     }
+
+    const QJsonObject app = root.value("app").toObject();
+    s.firstRunDone = app.value("firstRunDone").toBool(d.firstRunDone);
+    s.closeToTray = app.value("closeToTray").toBool(d.closeToTray);
+    s.startMinimized = app.value("startMinimized").toBool(d.startMinimized);
+    const QJsonObject speech = root.value("speech").toObject();
+    s.speechVoice = speech.value("voice").toString();
+    s.speechThroughVoice = speech.value("throughVoice").toBool(d.speechThroughVoice);
 
     s.currentVoiceId = root.value("currentVoice").toString(d.currentVoiceId);
     for (const auto f : root.value("favorites").toArray()) {

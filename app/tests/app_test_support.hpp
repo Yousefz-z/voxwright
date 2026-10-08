@@ -27,13 +27,19 @@ class TestApp {
 public:
     struct Devices {
         bool cable;
+        /// The cable's recording side gets what is played into the cable.
+        bool cableLoopback = false;
+        /// The recording side exists (implied by cableLoopback).
+        bool cableRecordingSide = false;
+        /// "mock" keeps tests independent of the system's speech engines.
+        QString speechEngine = QStringLiteral("mock");
     };
 
     TestApp()
         : TestApp(Devices{.cable = true}) {}
 
     /// `files` are written into the data folder first (path relative to it).
-    explicit TestApp(Devices devices, const QString& settingsJson = {},
+    explicit TestApp(const Devices& devices, const QString& settingsJson = {},
                      const QHash<QString, QByteArray>& files = {}) {
         auto backend = std::make_unique<devices::FakeBackend>();
         backend->setTime(0.0);
@@ -43,12 +49,23 @@ public:
         if (devices.cable) {
             backend->addDevice({"cable", "CABLE Input (VB-Audio Virtual Cable)",
                                 DeviceKind::Playback, false, 48000, 2, false});
+            if (devices.cableLoopback || devices.cableRecordingSide) {
+                backend->addDevice({"cable-out", "CABLE Output (VB-Audio Virtual Cable)",
+                                    DeviceKind::Capture, false, 48000, 2, false});
+            }
         }
+        loopback_ = devices.cableLoopback;
         backend_ = backend.get();
-        if (!settingsJson.isEmpty()) {
+        // The setup guide would cover the window in UI tests; tests that
+        // want it pass their own settings.
+        const QString json =
+            settingsJson.isEmpty()
+                ? QStringLiteral(R"({"version": 1, "app": {"firstRunDone": true}})")
+                : settingsJson;
+        {
             QFile file(settingsPath());
             if (file.open(QIODevice::WriteOnly)) {
-                file.write(settingsJson.toUtf8());
+                file.write(json.toUtf8());
             }
         }
         for (auto it = files.cbegin(); it != files.cend(); ++it) {
@@ -66,6 +83,8 @@ public:
         options.dataDir = dir_.path();
         options.hotkeys = std::move(hotkeys);
         options.checkMicrophonePermission = false; // fake devices, no app bundle
+        options.autostart = makeXdgAutostart(dir_.filePath(QStringLiteral("autostart")));
+        options.speechEngine = devices.speechEngine;
         context_ = std::make_unique<AppContext>(std::move(options));
     }
 
@@ -114,10 +133,17 @@ private:
             position_ += kBlock;
             static_cast<void>(backend_->pumpCapture("mic", mono));
             const auto played = backend_->pumpPlayback("cable", kBlock);
-            if (cable != nullptr && played.has_value()) {
+            if (played.has_value() && (cable != nullptr || loopback_)) {
                 const std::vector<float>& frames = played.value();
-                for (std::size_t i = 0; i < frames.size(); i += 2) {
-                    cable->push_back(frames[i]);
+                std::vector<float> left(frames.size() / 2);
+                for (std::size_t i = 0; i < left.size(); ++i) {
+                    left[i] = frames[2 * i];
+                }
+                if (cable != nullptr) {
+                    cable->insert(cable->end(), left.begin(), left.end());
+                }
+                if (loopback_) {
+                    static_cast<void>(backend_->pumpCapture("cable-out", left));
                 }
             }
             static_cast<void>(backend_->pumpPlayback("phones", kBlock));
@@ -134,6 +160,7 @@ private:
     devices::FakeBackend* backend_ = nullptr;
     ManualHotkeys* hotkeys_ = nullptr;
     std::unique_ptr<AppContext> context_;
+    bool loopback_ = false;
     double time_ = 0.0;
     std::size_t position_ = 0;
 };

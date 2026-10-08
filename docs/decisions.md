@@ -276,3 +276,46 @@ page show the live processing load, and checklist item D4 measures the
 slowest supported machine. Built-in voices use at most 5 effects and 3
 quick sliders. The limits are checked when editing and when loading any file.
 
+## D30. The tray uses Qt Widgets
+
+*2026-10-08.* Qt Quick has no tray icon of its own. `QSystemTrayIcon` with a
+`QMenu` gives the native tray on Windows and the menu bar extra on macOS,
+so the app runs a `QApplication` instead of a `QGuiApplication` and links
+Qt Widgets (LGPL-3, like the rest of Qt). Qt Labs Platform's tray would
+avoid the dependency but is a technology preview. Where the desktop has no
+tray, closing the window quits, and the settings that need a tray are
+disabled with the reason.
+
+## D31. Start at login on macOS uses a LaunchAgent
+
+*2026-10-08.* "Start at sign-in" writes a LaunchAgent property list to
+`~/Library/LaunchAgents` instead of calling `SMAppService.mainApp`.
+`SMAppService` needs macOS 13 and an Objective-C++ code path that cannot be
+compiled or tested here; a LaunchAgent works on every supported version
+(macOS 12 and later), is plain XML that the tests read back, and macOS 13+
+lists it under Login Items like any other. The same tested code writes the
+Windows Run key and the Linux XDG autostart file.
+
+## D32. Installers are built by CI and are not signed yet
+
+*2026-10-08.* CI builds the Windows installer with Inno Setup and the macOS
+disk image with `hdiutil`, from `cmake --install` trees in which Qt's
+deployment tools have placed the Qt runtime. Signing needs certificates
+(an Authenticode certificate for Windows, a Developer ID for macOS, plus
+notarization) that belong to the project owner, so the installers are
+unsigned and the README says how to open them. The installer installs per
+user by default (no administrator rights) and removes the sign-in entry on
+uninstall.
+
+## D33. The virtual microphone check listens where chat apps listen
+
+*2026-10-08.* The check plays a chirp (0.3 s, 400 Hz to 4 kHz, -12 dBFS)
+through the engine's speech channel, which goes to the virtual microphone
+exactly like a voice, and records the cable's recording side ("CABLE
+Output" for VB-CABLE, the same device name for BlackHole) as a chat app
+would. A normalized cross-correlation above 0.5 means the chirp arrived;
+the test suite measures above 0.8 with the chirp 20 dB over noise and
+below 0.3 for noise or speech alone. Silence and "something else arrived"
+get their own messages, because they have different causes (the cable is
+not installed or not selected, or another app plays into it).
+

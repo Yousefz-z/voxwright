@@ -7,6 +7,9 @@ ApplicationWindow {
     id: window
 
     required property AppContext app
+    /// Started at sign-in with --minimized: stay in the tray.
+    property bool startHidden: false
+    property bool trayNoticeShown: false
     property int page: 0
     // Page indexes.
     readonly property int voicesPage: 0
@@ -14,12 +17,13 @@ ApplicationWindow {
     readonly property int audioPage: 2
     readonly property int hotkeysPage: 3
     readonly property int designerPage: 4
+    readonly property int settingsPage: 5
 
     width: 1280
     height: 800
     minimumWidth: 960
     minimumHeight: 640
-    visible: true
+    visible: !startHidden
     title: "Voxwright"
     color: Theme.background
     font.family: Theme.fontFamily
@@ -34,6 +38,49 @@ ApplicationWindow {
             else if (action === "open-designer")
                 window.page = window.designerPage
         }
+    }
+
+    function showFromTray() {
+        window.show()
+        window.raise()
+        window.requestActivate()
+    }
+
+    // Closing keeps Voxwright running in the tray when the user wants that.
+    onClosing: close => {
+        if (!window.app.system.closeToTray)
+            return
+        close.accepted = false
+        window.hide()
+        if (!window.trayNoticeShown) {
+            window.trayNoticeShown = true
+            window.app.tray.notify(qsTr("Voxwright is still running"),
+                                   qsTr("Your voice keeps changing. Open Voxwright again from its icon here."))
+        }
+    }
+
+    Connections {
+        target: window.app.tray
+        function onShowWindowRequested() { window.showFromTray() }
+        function onQuitRequested() { Qt.quit() }
+    }
+
+    FirstRunGuide {
+        id: guide
+        app: window.app
+    }
+    Connections {
+        target: window.app.system
+        function onChanged() {
+            if (!window.app.system.firstRunDone && !guide.opened) {
+                guide.step = 0
+                guide.open()
+            }
+        }
+    }
+    Component.onCompleted: {
+        if (!window.app.system.firstRunDone && !window.startHidden)
+            guide.open()
     }
 
     RowLayout {
@@ -104,6 +151,14 @@ ApplicationWindow {
                     current: window.page === window.hotkeysPage
                     onClicked: window.page = window.hotkeysPage
                 }
+                NavButton {
+                    objectName: "navSettings"
+                    Layout.fillWidth: true
+                    text: qsTr("Settings")
+                    iconName: "settings"
+                    current: window.page === window.settingsPage
+                    onClicked: window.page = window.settingsPage
+                }
                 Item { Layout.fillHeight: true }
                 Text {
                     text: qsTr("Version %1").arg(window.app.version)
@@ -146,6 +201,7 @@ ApplicationWindow {
                 AudioPage { app: window.app }
                 HotkeysPage { app: window.app }
                 DesignerPage { app: window.app }
+                SettingsPage { app: window.app }
             }
 
             // Bottom bar.

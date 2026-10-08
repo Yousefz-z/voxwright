@@ -17,7 +17,7 @@ Development happens in milestones; each one is a commit.
 | 4 | Qt Quick app shell with device selection and live voice switching | Done |
 | 5 | Soundboard with 18 built-in sounds, import, play modes, and global hotkeys | Done |
 | 6 | Voice designer: effect chain editor with live preview, quick sliders, import and export | Done |
-| 7 | Tray, settings, start on boot, first-run flow, installers | Planned |
+| 7 | Tray, settings, start at sign-in, setup guide with a virtual microphone check, text to speech, installers built by CI | Done |
 | 8 | Optional neural voice conversion (behind `VOX_ENABLE_ML`) | Planned |
 
 ![Voxwright voices page](docs/images/screenshots/voices.png)
@@ -35,6 +35,17 @@ and has not been verified yet.
 * [Decisions](docs/decisions.md): scope decisions that must not be undone silently.
 * [Manual test checklist](docs/manual-test-checklist.md): everything that needs real hardware and has not been verified yet.
 * [Contributing](CONTRIBUTING.md): toolchain setup and the exact checks CI runs.
+
+## Installing
+
+CI builds a Windows installer (Inno Setup) and a macOS disk image on every
+push; download them from the run's artifacts. Neither is code-signed yet,
+so Windows SmartScreen and macOS Gatekeeper warn on first start (on macOS,
+right-click the app and choose Open). Voxwright needs a virtual audio
+cable: [VB-CABLE](https://vb-audio.com/Cable/) on Windows or
+[BlackHole 2ch](https://existential.audio/blackhole/) on macOS, both free.
+The setup guide on first start links to them and checks that the cable
+works.
 
 ## Building from source
 

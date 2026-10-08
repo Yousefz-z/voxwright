@@ -3,6 +3,7 @@
 // set). Rendering is software, offscreen.
 
 #include "app_test_support.hpp"
+#include "virtual_mic_check.hpp"
 
 #include <vox/testing/signals.hpp>
 
@@ -359,6 +360,73 @@ TEST_CASE("The voice designer builds, saves, lists, and deletes a voice", "[app]
     click(window, confirm);
     CHECK(ctx.voices()->preset(id) == nullptr);
     CHECK(ctx.voices()->customCount() == 0);
+
+    INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
+    CHECK(collector.warnings().isEmpty());
+}
+
+TEST_CASE("The setup guide walks through the devices and checks the virtual microphone",
+          "[app][ui][system]") {
+    const WarningCollector collector;
+    TestApp t({.cable = true, .cableLoopback = true},
+              QStringLiteral(R"({"version": 1, "app": {"firstRunDone": false}})"));
+    auto& ctx = t.context();
+    QQmlApplicationEngine qml;
+    qml.setInitialProperties({{QStringLiteral("app"), QVariant::fromValue(&ctx)}});
+    qml.loadFromModule(QStringLiteral("Voxwright"), QStringLiteral("Main"));
+    REQUIRE(qml.rootObjects().size() == 1);
+    auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().front());
+    REQUIRE(window != nullptr);
+    window->resize(1280, 820);
+    window->show();
+    REQUIRE(QTest::qWaitForWindowExposed(window));
+    QTest::qWait(100);
+
+    auto* guide = window->findChild<QObject*>(QStringLiteral("firstRunGuide"));
+    REQUIRE(guide != nullptr);
+    CHECK(guide->property("opened").toBool());
+    static_cast<void>(grab(window, QStringLiteral("first-run")));
+
+    click(window, findItem(window, QStringLiteral("guideNext"))); // welcome
+    click(window, findItem(window, QStringLiteral("guideNext"))); // microphone
+    CHECK(guide->property("step").toInt() == 2);
+    // The Settings page has the same button; take the guide's own.
+    auto* guideContent = guide->property("contentItem").value<QQuickItem*>();
+    REQUIRE(guideContent != nullptr);
+    auto* test = findItem(guideContent, QStringLiteral("testVirtualMic"));
+    REQUIRE(test != nullptr);
+    ctx.micCheck()->setListenMs(300);
+    click(window, test);
+    t.record(1.0, {});
+    REQUIRE(QTest::qWaitFor(
+        [&] { return ctx.micCheck()->state() != VirtualMicCheck::State::Running; }, 5000));
+    CHECK(ctx.micCheck()->state() == VirtualMicCheck::State::Passed);
+    static_cast<void>(grab(window, QStringLiteral("first-run-cable")));
+
+    click(window, findItem(window, QStringLiteral("guideNext"))); // virtual microphone
+    click(window, findItem(window, QStringLiteral("guideNext"))); // headphones
+    click(window, findItem(window, QStringLiteral("guideNext"))); // done
+    QTest::qWait(300);
+    CHECK_FALSE(guide->property("opened").toBool());
+    CHECK(ctx.settings().firstRunDone);
+
+    // Settings page, and the guide can come back from there.
+    click(window, findItem(window, QStringLiteral("navSettings")));
+    static_cast<void>(grab(window, QStringLiteral("settings")));
+    auto* again = findItem(window, QStringLiteral("runSetupAgain"));
+    REQUIRE(again != nullptr);
+    click(window, again);
+    QTest::qWait(300);
+    CHECK(guide->property("opened").toBool());
+    click(window, findItem(window, QStringLiteral("guideSkip")));
+    QTest::qWait(300);
+    CHECK(ctx.settings().firstRunDone);
+
+    // Text to speech sits under the soundboard.
+    click(window, findItem(window, QStringLiteral("navSoundboard")));
+    auto* panel = findItem(window, QStringLiteral("speechPanel"));
+    REQUIRE(panel != nullptr);
+    CHECK(panel->isVisible());
 
     INFO(collector.warnings().join(QLatin1Char('\n')).toStdString());
     CHECK(collector.warnings().isEmpty());

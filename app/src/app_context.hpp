@@ -6,8 +6,13 @@
 #include "hotkey_controller.hpp"
 #include "hotkeys/global_hotkeys.hpp"
 #include "notification_model.hpp"
+#include "platform/autostart.hpp"
 #include "settings.hpp"
 #include "soundboard_controller.hpp"
+#include "speech_controller.hpp"
+#include "system_controller.hpp"
+#include "tray_controller.hpp"
+#include "virtual_mic_check.hpp"
 #include "voice_controller.hpp"
 
 #include <vox/devices/audio_backend.hpp>
@@ -36,6 +41,10 @@ class AppContext : public QObject {
     Q_PROPERTY(vox::app::SoundboardController* soundboard READ soundboard CONSTANT)
     Q_PROPERTY(vox::app::HotkeyController* hotkeys READ hotkeys CONSTANT)
     Q_PROPERTY(vox::app::DesignerController* designer READ designer CONSTANT)
+    Q_PROPERTY(vox::app::SystemController* system READ system CONSTANT)
+    Q_PROPERTY(vox::app::TrayController* tray READ tray CONSTANT)
+    Q_PROPERTY(vox::app::SpeechController* speech READ speech CONSTANT)
+    Q_PROPERTY(vox::app::VirtualMicCheck* micCheck READ micCheck CONSTANT)
     Q_PROPERTY(vox::app::NotificationModel* notifications READ notifications CONSTANT)
     Q_PROPERTY(QString version READ version CONSTANT)
 
@@ -53,6 +62,10 @@ public:
         /// Ask the OS for microphone access before recording (macOS). Off
         /// only for tests on fake devices, which run outside an app bundle.
         bool checkMicrophonePermission = true;
+        /// Start at sign-in; null for this system's own mechanism.
+        std::unique_ptr<Autostart> autostart;
+        /// QTextToSpeech engine name; empty for the system's default.
+        QString speechEngine;
     };
 
     explicit AppContext(Options options, QObject* parent = nullptr);
@@ -67,6 +80,10 @@ public:
     [[nodiscard]] SoundboardController* soundboard() { return soundboard_.get(); }
     [[nodiscard]] HotkeyController* hotkeys() { return hotkeyController_.get(); }
     [[nodiscard]] DesignerController* designer() { return designer_.get(); }
+    [[nodiscard]] SystemController* system() { return system_.get(); }
+    [[nodiscard]] TrayController* tray() { return tray_.get(); }
+    [[nodiscard]] SpeechController* speech() { return speech_.get(); }
+    [[nodiscard]] VirtualMicCheck* micCheck() { return micCheck_.get(); }
     [[nodiscard]] GlobalHotkeys& globalHotkeys() { return *globalHotkeys_; }
     [[nodiscard]] NotificationModel* notifications() { return &notifications_; }
     [[nodiscard]] static QString version();
@@ -88,6 +105,9 @@ signals:
 private:
     void scheduleSave();
     void runHotkeyAction(HotkeyController::Action action);
+    /// Puts every setting back to its default (the user's own voices and
+    /// soundboards are separate files and stay) and offers a restart.
+    void resetSettings();
 
     SettingsStore store_;
     AppSettings settings_;
@@ -102,6 +122,11 @@ private:
     std::unique_ptr<HotkeyController> hotkeyController_;
     std::unique_ptr<SoundboardController> soundboard_;
     std::unique_ptr<DesignerController> designer_;
+    std::unique_ptr<Autostart> autostart_;
+    std::unique_ptr<SystemController> system_;
+    std::unique_ptr<TrayController> tray_;
+    std::unique_ptr<SpeechController> speech_;
+    std::unique_ptr<VirtualMicCheck> micCheck_;
     QTimer saveTimer_;
 };
 

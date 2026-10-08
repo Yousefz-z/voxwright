@@ -1,9 +1,10 @@
 #include "app_context.hpp"
+#include "system_controller.hpp"
 
 #include <vox/devices/audio_backend.hpp>
 #include <vox/devices/fake_backend.hpp>
 
-#include <QGuiApplication>
+#include <QApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
@@ -12,11 +13,13 @@
 Q_IMPORT_QML_PLUGIN(VoxwrightPlugin)
 
 int main(int argc, char* argv[]) {
-    const QGuiApplication application(argc, argv);
-    QGuiApplication::setApplicationName(QStringLiteral("Voxwright"));
-    QGuiApplication::setOrganizationName(QStringLiteral("Voxwright"));
-    QGuiApplication::setApplicationVersion(vox::app::AppContext::version());
-    QGuiApplication::setWindowIcon(QIcon(QStringLiteral(":/qt/qml/Voxwright/icons/app.svg")));
+    const QApplication application(argc, argv);
+    QApplication::setApplicationName(QStringLiteral("Voxwright"));
+    QApplication::setOrganizationName(QStringLiteral("Voxwright"));
+    QApplication::setApplicationVersion(vox::app::AppContext::version());
+    QApplication::setWindowIcon(QIcon(QStringLiteral(":/qt/qml/Voxwright/icons/app.svg")));
+    // Closing the window may only hide it (tray); quitting is explicit.
+    QApplication::setQuitOnLastWindowClosed(false);
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
     vox::app::AppContext::Options options;
@@ -28,12 +31,21 @@ int main(int argc, char* argv[]) {
         options.backendError = backend.error();
     }
     vox::app::AppContext context(std::move(options));
+    context.tray()->show();
+    const bool startHidden =
+        QApplication::arguments().contains(vox::app::SystemController::minimizedArgument()) &&
+        context.tray()->available();
 
     QQmlApplicationEngine qml;
-    qml.setInitialProperties({{QStringLiteral("app"), QVariant::fromValue(&context)}});
+    qml.setInitialProperties({{QStringLiteral("app"), QVariant::fromValue(&context)},
+                              {QStringLiteral("startHidden"), startHidden}});
     qml.loadFromModule(QStringLiteral("Voxwright"), QStringLiteral("Main"));
     if (qml.rootObjects().isEmpty()) {
         return 1;
     }
-    return QGuiApplication::exec();
+    // Without a tray, closing the window is the only way out.
+    if (!context.tray()->available()) {
+        QApplication::setQuitOnLastWindowClosed(true);
+    }
+    return QApplication::exec();
 }

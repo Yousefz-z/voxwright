@@ -1,10 +1,10 @@
-// Test runner for the app layer: a QGuiApplication on the offscreen
+// Test runner for the app layer: a QApplication on the offscreen
 // platform with the software renderer, so the UI renders without a display
 // or GPU, and QStandardPaths in test mode so nothing touches real settings.
 
 #include <catch2/catch_session.hpp>
 
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQuickWindow>
 #include <QStandardPaths>
 #include <QtQml/qqmlextensionplugin.h>
@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     }
     QStandardPaths::setTestModeEnabled(true);
     QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
-    const QGuiApplication application(argc, argv);
-    QGuiApplication::setApplicationName(QStringLiteral("VoxwrightTests"));
+    const QApplication application(argc, argv); // the tray menu is a widget
+    QApplication::setApplicationName(QStringLiteral("VoxwrightTests"));
     return Catch::Session().run(argc, argv);
 }

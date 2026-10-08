@@ -2,7 +2,10 @@
 
 #include <vox/plugins/voice_library.hpp>
 
+#include <QCoreApplication>
 #include <QDesktopServices>
+#include <QFileInfo>
+#include <QProcess>
 #include <QStandardPaths>
 #include <QUrl>
 
@@ -106,6 +109,18 @@ AppContext::AppContext(Options options, QObject* parent)
     designer_ = std::make_unique<DesignerController>(*engine_, registry, *voices_, voiceStore_,
                                                      notifications_);
 
+    autostart_ = options.autostart ? std::move(options.autostart) : makePlatformAutostart();
+    tray_ = std::make_unique<TrayController>(*audio_, *voices_, *soundboard_);
+    system_ = std::make_unique<SystemController>(
+        *autostart_, settings_, QCoreApplication::applicationFilePath(), tray_->available());
+    connect(system_.get(), &SystemController::settingsChanged, this, &AppContext::scheduleSave);
+    speech_ = std::make_unique<SpeechController>(*engine_, settings_, notifications_,
+                                                 options.speechEngine);
+    connect(speech_.get(), &SpeechController::settingsChanged, this, &AppContext::scheduleSave);
+    connect(audio_.get(), &AudioController::speechFinished, speech_.get(),
+            &SpeechController::onSpeechFinished);
+    micCheck_ = std::make_unique<VirtualMicCheck>(*backend_, *engine_);
+
     // The voice goes in first so the engine starts with it already built.
     voices_->initialize();
     audio_->initialize();
@@ -147,6 +162,7 @@ void AppContext::runHotkeyAction(HotkeyController::Action action) {
 }
 
 AppContext::~AppContext() {
+    micCheck_->cancel();
     static_cast<void>(saveNow());
     static_cast<void>(soundboard_->saveNow());
     engine_->stop();
@@ -165,6 +181,23 @@ Status AppContext::saveNow() {
     return saved;
 }
 
+void AppContext::resetSettings() {
+    const bool firstRunDone = settings_.firstRunDone;
+    settings_ = AppSettings{};
+    settings_.firstRunDone = firstRunDone; // do not pop the guide up mid-session
+    if (auto saved = saveNow(); !saved) {
+        notifications_.post(QStringLiteral("settings-save"), NotificationModel::Level::Error,
+                            tr("Settings not saved"),
+                            QString::fromStdString(saved.error().message));
+        return;
+    }
+    hotkeyController_->initialize(); // the system hotkeys are gone now
+    notifications_.post(QStringLiteral("settings-reset"), NotificationModel::Level::Info,
+                        tr("Settings were reset"),
+                        tr("Restart Voxwright so every part starts from the defaults."),
+                        tr("Restart now"), QStringLiteral("restart"));
+}
+
 void AppContext::scheduleSave() {
     saveTimer_.start();
 }
@@ -174,6 +207,14 @@ void AppContext::runAction(const QString& action) {
         audio_->restart();
     } else if (action == QStringLiteral("get-virtual-cable")) {
         QDesktopServices::openUrl(QUrl(AudioController::virtualCableUrl()));
+    } else if (action == QStringLiteral("open-settings-folder")) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(store_.path()).absolutePath()));
+    } else if (action == QStringLiteral("reset-settings")) {
+        resetSettings();
+    } else if (action == QStringLiteral("restart")) {
+        if (QProcess::startDetached(QCoreApplication::applicationFilePath(), {})) {
+            QCoreApplication::quit();
+        }
     } else {
         emit uiActionRequested(action);
     }

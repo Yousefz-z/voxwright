@@ -19,6 +19,14 @@ target_include_directories(vox_voice_report PRIVATE ${PROJECT_SOURCE_DIR}/plugin
 target_link_libraries(vox_voice_report PRIVATE vox::plugins vox::testing)
 vox_target_defaults(vox_voice_report)
 
+# Renders app/icons/app.svg for the .ico and .icns files (tools/icons).
+if(VOX_BUILD_APP)
+    find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Svg)
+    add_executable(vox_render_icon icons/render_icon.cpp)
+    target_link_libraries(vox_render_icon PRIVATE Qt6::Gui Qt6::Svg)
+    vox_target_defaults(vox_render_icon)
+endif()
+
 add_executable(vox_bench_engine bench/engine_bench.cpp ${PROJECT_SOURCE_DIR}/engine/tests/drift_simulation.cpp)
 target_include_directories(vox_bench_engine PRIVATE ${PROJECT_SOURCE_DIR}/engine/tests)
 target_link_libraries(vox_bench_engine PRIVATE vox::engine vox::testing)
