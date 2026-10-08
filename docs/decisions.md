@@ -353,7 +353,8 @@ in the optimized build, while ThreadSanitizer measured up to 0.33 on a
 loaded machine, past the 0.25 budget. Sanitizer builds therefore define
 `VOX_TESTING_INSTRUMENTED`, and timing checks multiply their budget by
 `vox::testing::kTimingScale` (8 there, 1 elsewhere). The real-time budget
-itself is enforced, unscaled, by the release and clang test runs.
+itself is enforced, unscaled, by the optimized test runs (release and
+Windows); unoptimized builds scale too since D42.
 
 ## D37. macOS CI runs on demand
 
@@ -400,3 +401,24 @@ on a local socket (Qt Network); a later start connects to it, which shows
 the running window, and ends. A start at sign-in (`--minimized`) while
 Voxwright already runs ends without showing it. A lock left by a process
 that is gone is taken over, so a crash does not block the next start.
+
+## D41. Releases publish the Windows installer from a version tag
+
+*2026-10-08.* Run artifacts need a GitHub sign-in and expire, so they are no
+way for people to download Voxwright. Pushing a tag such as `v0.1.0` now
+publishes the Windows installer as a GitHub release, but only after every
+check on that tag has passed and only when the tag matches the version in
+`CMakeLists.txt`; the README links to the latest release. The macOS disk
+image is not published: it has never been opened on a Mac (D37), and a
+download should be something that has run at least once.
+
+## D42. Timing budgets also scale in unoptimized builds
+
+*2026-10-08.* The clang and ML CI jobs build without optimization (the
+Debug configuration), but D36 held them to the unscaled real-time budget.
+There the slowest voice, Frost Wraith, measured 0.2515 of real time on a
+GitHub runner, past the 0.25 budget, while optimized builds stay at or
+below 0.065; the check passed or failed with the runner's speed. Builds
+without `NDEBUG` now multiply timing budgets by 4, so a debug build must
+still keep up with real time. The real budget stays enforced, unscaled, by
+the optimized release and Windows runs.

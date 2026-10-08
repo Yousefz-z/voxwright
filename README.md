@@ -5,6 +5,22 @@ macOS. It runs your microphone through layered voice effects, mixes in
 soundboard clips and background ambience, and plays the result into a
 virtual microphone that Discord, Zoom, Teams, OBS, and games can use.
 
+## Download
+
+**[Download the latest Windows installer](https://github.com/Yousefz-z/voxwright/releases/latest)**
+(Windows 10 version 1809 or later, or Windows 11, 64-bit).
+
+1. Install [VB-CABLE](https://vb-audio.com/Cable/) (free), the virtual
+   microphone Voxwright plays into. Its setup needs administrator rights.
+2. Run `Voxwright-...-windows-x64-setup.exe` from the release. It installs
+   for your account without administrator rights. It is not code-signed
+   yet, so SmartScreen warns: choose **More info**, then **Run anyway**.
+3. Start Voxwright and follow the setup guide, then choose
+   **CABLE Output (VB-Audio Virtual Cable)** as the microphone in Discord,
+   Zoom, or your game.
+
+There is no macOS download yet; see [Building from source](#building-from-source).
+
 ## Status
 
 Development happens in milestones; each one is a commit.
@@ -24,8 +40,9 @@ Development happens in milestones; each one is a commit.
 
 Features marked Done pass their automated tests on a simulated audio
 device and keyboard. What only real hardware can show (drivers, games,
-latency) is listed in the [manual test checklist](docs/manual-test-checklist.md)
-and has not been verified yet.
+latency) is listed in the [manual test checklist](docs/manual-test-checklist.md);
+rows that have been run carry a date and a result, and the rest are not
+verified yet.
 
 ## Documentation
 
@@ -37,16 +54,18 @@ and has not been verified yet.
 * [Manual test checklist](docs/manual-test-checklist.md): everything that needs real hardware and has not been verified yet.
 * [Contributing](CONTRIBUTING.md): toolchain setup and the exact checks CI runs.
 
-## Installing
+## Installers
 
-CI is set up to build a Windows installer (Inno Setup) for every pull
-request and push to `main`, and a macOS disk image when the workflow is
-started by hand, as run artifacts. Neither has been installed on a real
-machine yet: this code was developed without access to Windows or macOS.
-Neither installer is code-signed,
-so Windows SmartScreen and macOS Gatekeeper warn on first start (on macOS,
-right-click the app and choose Open). Voxwright needs a virtual audio
-cable: [VB-CABLE](https://vb-audio.com/Cable/) on Windows or
+CI builds the Windows installer (Inno Setup) for every pull request and
+push to `main`, and a macOS disk image when the workflow is started by
+hand. A version tag publishes the Windows installer as a
+[release](https://github.com/Yousefz-z/voxwright/releases); see
+[Releasing](CONTRIBUTING.md#releasing). The Windows installer has been
+installed and used on Windows 11 (see the manual test checklist); the macOS
+disk image has not been tried on a Mac yet. Neither installer is
+code-signed, so Windows SmartScreen and macOS Gatekeeper warn on first
+start (on macOS, right-click the app and choose Open). Voxwright needs a
+virtual audio cable: [VB-CABLE](https://vb-audio.com/Cable/) on Windows or
 [BlackHole 2ch](https://existential.audio/blackhole/) on macOS, both free.
 The setup guide on first start links to them and checks that the cable
 works.
