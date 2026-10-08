@@ -133,18 +133,16 @@ Result<std::unique_ptr<Stream>> FakeBackend::openPlayback(const StreamConfig& co
 }
 
 void FakeBackend::setEventCallback(EventCallback callback) {
-    const std::scoped_lock lock(mutex_);
+    // Same guarantee as the real backend: once this returns, the previous
+    // callback is neither running nor called again.
+    const std::scoped_lock lock(eventMutex_);
     callback_ = std::move(callback);
 }
 
 void FakeBackend::notify(const DeviceEvent& event) {
-    EventCallback callback;
-    {
-        const std::scoped_lock lock(mutex_);
-        callback = callback_;
-    }
-    if (callback) {
-        callback(event);
+    const std::scoped_lock lock(eventMutex_);
+    if (callback_) {
+        callback_(event);
     }
 }
 

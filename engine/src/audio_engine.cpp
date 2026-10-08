@@ -628,7 +628,17 @@ void AudioEngine::handleDeviceEvents(std::vector<EngineEvent>& out) {
         const std::scoped_lock lock(deviceEventsMutex_);
         events.swap(deviceEvents_);
     }
-    if (!running_ || events.empty()) {
+    if (events.empty()) {
+        return;
+    }
+    const bool listChangedAtAll =
+        std::any_of(events.begin(), events.end(), [](const devices::DeviceEvent& e) {
+            return e.kind == devices::DeviceEventKind::DeviceListChanged;
+        });
+    if (listChangedAtAll) {
+        out.push_back({EngineEventKind::DevicesChanged, 0, {}});
+    }
+    if (!running_) {
         return;
     }
     const auto matches = [](const auto& port, const std::string& id) {

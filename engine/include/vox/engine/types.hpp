@@ -68,6 +68,7 @@ enum class EngineEventKind {
     DeviceRestored,   ///< value = DeviceRole. The lost device came back and was reopened.
     RestartFailed,    ///< Reopening the devices failed; detail = the error message.
                       ///< The engine is stopped until start() is called again.
+    DevicesChanged,   ///< Devices were added or removed; refresh device lists.
     FeedbackDetected, ///< Howl detected; hear-myself was switched off. value = Hz.
     SoundFinished,    ///< value = sound id.
     SpeechFinished,

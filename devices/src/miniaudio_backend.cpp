@@ -5,11 +5,15 @@
 
 #include <array>
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <cstring>
 #include <map>
 #include <mutex>
 #include <string>
+#include <thread>
+#include <vector>
 
 namespace vox::devices {
 namespace {
@@ -100,6 +104,7 @@ public:
                 std::string("miniaudio: ") + ma_result_description(r));
         }
         initialized_ = true;
+        watcher_ = std::thread([this] { watchDevices(); });
         return {};
     }
     MiniaudioBackend() = default;
@@ -108,6 +113,14 @@ public:
     MiniaudioBackend(MiniaudioBackend&&) = delete;
     MiniaudioBackend& operator=(MiniaudioBackend&&) = delete;
     ~MiniaudioBackend() override {
+        {
+            const std::scoped_lock lock(watchMutex_);
+            stopWatching_ = true;
+        }
+        watchWake_.notify_all();
+        if (watcher_.joinable()) {
+            watcher_.join();
+        }
         if (initialized_) {
             ma_context_uninit(&context_);
         }
@@ -158,18 +171,16 @@ public:
     }
 
     void setEventCallback(EventCallback callback) override {
-        const std::scoped_lock lock(mutex_);
+        // Waits for a running callback, so once this returns the old one
+        // is never called again (its owner may be about to be destroyed).
+        const std::scoped_lock lock(eventMutex_);
         callback_ = std::move(callback);
     }
 
     void notify(const DeviceEvent& event) {
-        EventCallback callback;
-        {
-            const std::scoped_lock lock(mutex_);
-            callback = callback_;
-        }
-        if (callback) {
-            callback(event);
+        const std::scoped_lock lock(eventMutex_);
+        if (callback_) {
+            callback_(event);
         }
     }
 
@@ -211,7 +222,16 @@ private:
     bool initialized_ = false;
     std::mutex mutex_;
     std::map<std::string, ma_device_id> ids_;
+    std::mutex eventMutex_;
     EventCallback callback_;
+
+    // miniaudio reports events per open stream only, not devices being
+    // added or removed, so a watcher compares the device lists every 2 s.
+    void watchDevices();
+    std::thread watcher_;
+    std::mutex watchMutex_;
+    std::condition_variable watchWake_;
+    bool stopWatching_ = false;
 };
 
 Status MiniaudioStream::open(ma_context& context, const StreamConfig& config,
@@ -282,6 +302,32 @@ void MiniaudioStream::notificationCallback(const ma_device_notification* notific
         break;
     default:
         break;
+    }
+}
+
+void MiniaudioBackend::watchDevices() {
+    constexpr auto kInterval = std::chrono::seconds(2);
+    const auto snapshot = [this] {
+        std::vector<std::string> ids;
+        for (const DeviceKind kind : {DeviceKind::Capture, DeviceKind::Playback}) {
+            if (auto list = enumerate(kind)) {
+                for (const auto& d : list.value()) {
+                    ids.push_back(d.id + (d.isDefault ? "*" : ""));
+                }
+            }
+        }
+        return ids;
+    };
+    std::vector<std::string> last = snapshot();
+    std::unique_lock lock(watchMutex_);
+    while (!watchWake_.wait_for(lock, kInterval, [this] { return stopWatching_; })) {
+        lock.unlock();
+        std::vector<std::string> now = snapshot();
+        if (now != last) {
+            last = std::move(now);
+            notify({DeviceEventKind::DeviceListChanged, {}});
+        }
+        lock.lock();
     }
 }
 

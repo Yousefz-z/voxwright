@@ -83,7 +83,7 @@ Module names refer to the layout in [architecture.md](architecture.md):
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
 | Hear-myself toggle (processed voice to headphones) | M | Monitor bus to the selected output device; toggle in the bottom bar, tray, and hotkey. |
-| Monitor volume and per-channel mixer (voice, soundboard, hear-myself levels) | M | "Mixer" settings page with voice, soundboard, monitor, TTS, and background faders. |
+| Monitor volume and per-channel mixer (voice, soundboard, hear-myself levels) | M | "Monitoring and mix" card on the Audio page: voice, sounds, text-to-speech, and headphone levels. Background level is a macro on each voice that has ambience. |
 | Automatic feedback detection that turns hear-myself off | N | While hear-myself is on, `dsp::FeedbackDetector` watches the microphone for a loud, narrow spectral peak that holds its frequency longer than speech does (howl). The engine then fades the monitor out, turns hear-myself off, and reports the frequency so the UI can explain why (test: a 2.5 kHz howl is caught and reported within 30 Hz). Can be disabled in Advanced settings. |
 
 ## 6. Push-to-talk and push-to-mute
@@ -158,7 +158,7 @@ Module names refer to the layout in [architecture.md](architecture.md):
 
 | Feature (observed behavior) | Priority | Implementation |
 |---|---|---|
-| Settings sections: Audio, Mixer, Hotkeys, General, Advanced | M | QML settings pages backed by a typed `AppSettings` store (QSettings). |
+| Settings sections: Audio, Mixer, Hotkeys, General, Advanced | M | QML settings pages backed by a typed `AppSettings` struct saved as JSON by `SettingsStore`: atomic writes, and a damaged file is set aside and reported instead of crashing or silently resetting ([decisions.md](decisions.md#d22-settings-are-a-json-file)). |
 | Start with the operating system | M | Windows: `HKCU\...\CurrentVersion\Run` entry. macOS: `SMAppService.mainApp` (macOS 13+). Linux: XDG autostart file. |
 | Start minimized | M | Launch flag added to the autostart entry. |
 | Light and dark theme | N | Dark default, light alternative. |

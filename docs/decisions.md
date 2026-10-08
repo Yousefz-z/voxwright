@@ -186,3 +186,25 @@ same 20 ms.
 microphone and are strongly correlated, so the 20 ms switch uses a
 constant-gain (linear) crossfade. An equal-power crossfade measured a
 +3 dB swell halfway through (0.57 peak for a 0.4 input).
+
+## D22. Settings are a JSON file
+
+*2026-10-08.* Settings are saved as `settings.json` in the per-user
+configuration folder instead of through `QSettings`. On Windows `QSettings`
+writes to the registry, which users cannot back up, share, or repair by
+hand; a JSON file is the same on both platforms, can be exported, and is
+easy to test. Writes are atomic (`QSaveFile`). A file that does not parse
+is renamed to `settings.json.damaged` and the user is told, rather than
+the app crashing or silently starting over; a file from a newer version
+loads the settings this version knows.
+
+## D23. Device lists are polled every 2 seconds
+
+*2026-10-08.* miniaudio reports events for open streams only (stopped,
+rerouted), not devices being added or removed. The miniaudio backend
+therefore compares the device lists every 2 s on a watcher thread and
+reports a change; the engine and the app react to it (reopening a lost
+device, picking a newly installed virtual cable). Native notifications
+(`IMMNotificationClient` on Windows, a CoreAudio property listener on
+macOS) would react faster but add two platform-specific code paths that
+cannot be exercised here; 2 s is fast enough for plugging in a headset.

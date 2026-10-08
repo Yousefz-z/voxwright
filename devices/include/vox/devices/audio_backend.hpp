@@ -111,7 +111,9 @@ public:
                                                                       CaptureHandler& handler) = 0;
     [[nodiscard]] virtual Result<std::unique_ptr<Stream>>
     openPlayback(const StreamConfig& config, PlaybackHandler& handler) = 0;
-    /// The callback may be invoked from any thread.
+    /// The callback may be invoked from any thread. Once setEventCallback
+    /// returns, the previous callback is not running and is never called
+    /// again, so its owner can be destroyed safely.
     virtual void setEventCallback(EventCallback callback) = 0;
     /// Monotonic time in seconds, the clock the device callbacks run on.
     /// Safe from any thread, including audio callbacks.

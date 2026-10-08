@@ -35,6 +35,18 @@ attach logs or measurements to the pull request that records them.
 | A16 | Both | Enable push-to-talk with the default 150 ms release delay. Speak while holding the key; release it mid-word. | Nothing is sent while the key is up; the end of the word after release is still sent; no clicks at either edge. (The global hotkey itself is checked in milestone 5.) | | | |
 | A17 | Both | Turn noise reduction on next to a fan or air conditioner, then off. | The fan noise drops clearly while speech stays natural; toggling never clicks. | | | |
 
+## Application window (milestone 4)
+
+| # | Platform | Steps | Expected | Date | Tester | Result |
+|---|---|---|---|---|---|---|
+| U1 | Windows 11 | Run at 100 %, 150 %, and 200 % display scaling. | Sharp text in Segoe UI, nothing clipped or overlapping, icons crisp. | | | |
+| U2 | macOS | Run on a Retina and a non-Retina display. | Same as U1 with the system font. | | | |
+| U3 | Both | Use the app with the keyboard only, then with Narrator (Windows) or VoiceOver (macOS). | Every toggle, slider, voice tile, and picker can be reached and is announced by name and state. | | | |
+| U4 | Both | Change each device picker while speaking. | Audio resumes on the new device within a second, without a crash or stuck sound. | | | |
+| U5 | Both | Run in a virtual machine without GPU acceleration, or over remote desktop. | The window renders (software renderer); voice icons stay inside the scrolling grid. | | | |
+| U6 | Both | Change settings, quit, and start again. Then replace `settings.json` with garbage text and start again. | Settings come back as left. With the damaged file, a "Settings reset" banner appears and `settings.json.damaged` keeps the old content. | | | |
+| U7 | Both | Start with no virtual cable installed; install VB-CABLE or BlackHole while the app runs. | The "No virtual microphone installed" banner links to the official page; after installing, the app picks the cable and says which microphone to choose in chat apps. | | | |
+
 ## Voices (milestone 2)
 
 | # | Platform | Steps | Expected | Date | Tester | Result |

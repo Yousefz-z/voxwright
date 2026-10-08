@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <atomic>
+#include <chrono>
 #include <thread>
 
 namespace {
@@ -140,4 +141,24 @@ TEST_CASE("The system backend starts or explains why not", "[devices][system]") 
     // must succeed.
     CHECK(backend.value()->enumerate(DeviceKind::Playback));
     CHECK(backend.value()->enumerate(DeviceKind::Capture));
+}
+
+TEST_CASE("Replacing the event callback waits for one that is running", "[devices][fake]") {
+    vox::devices::FakeBackend backend;
+    addStandardDevices(backend);
+    std::atomic<bool> started{false};
+    std::atomic<bool> finished{false};
+    backend.setEventCallback([&](const vox::devices::DeviceEvent& /*event*/) {
+        started = true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        finished = true;
+    });
+    std::thread device([&backend] { backend.removeDevice("spk"); });
+    while (!started) {
+        std::this_thread::yield();
+    }
+    backend.setEventCallback({});
+    // The owner of the old callback may be destroyed now: it is not running.
+    CHECK(finished);
+    device.join();
 }

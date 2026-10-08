@@ -66,6 +66,7 @@ private:
     std::vector<DeviceInfo> devices_;
     std::map<std::string, Error> failures_;
     std::map<std::string, OpenStream*> streams_;
+    std::mutex eventMutex_; ///< Held while the event callback runs or is replaced.
     EventCallback callback_;
 };
 

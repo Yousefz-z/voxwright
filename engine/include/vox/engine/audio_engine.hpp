@@ -46,6 +46,11 @@ public:
     [[nodiscard]] Status start(const DeviceSelection& selection);
     void stop() noexcept;
     [[nodiscard]] bool isRunning() const noexcept { return running_; }
+    /// Device buffer size and WASAPI exclusive mode, used from the next start().
+    void setDeviceOptions(std::uint32_t periodFrames, bool exclusive) noexcept {
+        config_.periodFrames = periodFrames;
+        config_.exclusive = exclusive;
+    }
     [[nodiscard]] const DeviceSelection& selection() const noexcept { return selection_; }
 
     struct ActiveDevices {

@@ -38,6 +38,9 @@ enum class ErrorCode {
     UnknownParameter,
     ParameterOutOfRange,
     InvalidPreset,
+    // Application settings.
+    SettingsDamaged,
+    SettingsFromNewerVersion,
     // Hotkeys and platform integration.
     HotkeyConflict,
     HotkeyRegistrationFailed,
@@ -110,6 +113,10 @@ inline std::string_view toString(ErrorCode code) noexcept {
         return "ParameterOutOfRange";
     case ErrorCode::InvalidPreset:
         return "InvalidPreset";
+    case ErrorCode::SettingsDamaged:
+        return "SettingsDamaged";
+    case ErrorCode::SettingsFromNewerVersion:
+        return "SettingsFromNewerVersion";
     case ErrorCode::HotkeyConflict:
         return "HotkeyConflict";
     case ErrorCode::HotkeyRegistrationFailed:

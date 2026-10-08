@@ -6,6 +6,7 @@
 #include <vox/testing/analysis.hpp>
 #include <vox/testing/signals.hpp>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 using namespace vox::engine;
@@ -332,4 +333,33 @@ TEST_CASE("The capture callback path does not allocate", "[engine][e2e][realtime
         allocations = trap.allocations();
     }
     CHECK(allocations == 0);
+}
+
+TEST_CASE("Device list changes are reported, running or not", "[engine][devices]") {
+    Rig rig;
+    static_cast<void>(rig.engine.poll()); // the rig's own setup changes
+    rig.backend.addDevice({"usb", "USB Headset", DeviceKind::Playback, false, 48000, 2, false});
+    auto events = rig.engine.poll();
+    CHECK(std::any_of(events.begin(), events.end(), [](const EngineEvent& e) {
+        return e.kind == EngineEventKind::DevicesChanged;
+    }));
+    REQUIRE(rig.engine.start(rig.selection));
+    rig.backend.removeDevice("usb");
+    events = rig.engine.poll();
+    CHECK(std::any_of(events.begin(), events.end(), [](const EngineEvent& e) {
+        return e.kind == EngineEventKind::DevicesChanged;
+    }));
+    CHECK(rig.engine.isRunning());
+}
+
+TEST_CASE("Buffer size and exclusive mode apply from the next start", "[engine][devices]") {
+    Rig rig;
+    rig.engine.setDeviceOptions(256, true);
+    REQUIRE(rig.engine.start(rig.selection));
+    const auto active = rig.engine.activeDevices();
+    REQUIRE(active.input);
+    const auto input = active.input.value_or(vox::devices::StreamInfo{});
+    CHECK(input.periodFrames == 256);
+    CHECK(input.exclusive);
+    CHECK(rig.engine.stats().virtualMicLatency.captureMs == Catch::Approx(256.0 / 48.0));
 }

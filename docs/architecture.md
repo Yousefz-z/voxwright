@@ -235,7 +235,9 @@ miniaudio 0.11.25 over PortAudio:
   and device notifications are weaker.
 
 The devices layer opens every device at its native rate and channel
-count. Rate conversion and drift compensation happen in the engine with
+count. miniaudio reports events per open stream only, so the backend
+also re-reads the device lists every 2 s and reports additions and
+removals ([decisions.md](decisions.md#d23-device-lists-are-polled-every-2-seconds)). Rate conversion and drift compensation happen in the engine with
 libsamplerate so quality does not depend on the backend's built-in
 linear resampler.
 
@@ -291,6 +293,42 @@ Qt 6.8 LTS with Qt Quick (QML), chosen over JUCE:
 
 Global hotkeys are not part of Qt, so `app/platform/` implements them per
 OS (see [feature-matrix.md](feature-matrix.md#12-global-hotkeys)).
+
+### App structure
+
+* `vox_app_core` (static library) holds everything except `main()`:
+  `AppContext` owns the audio backend, the engine, the settings, and the
+  controllers. `AudioController` covers devices (with fallbacks when a
+  saved device is missing and automatic selection of a newly found
+  virtual cable), input processing, mix levels, meters and the latency
+  readout at 30 Hz, and turns engine events into notifications with a
+  specific message and action. `VoiceController` owns the voice grid
+  model and its filter, the active voice, macro and tone sliders, and
+  favorites. `SettingsStore` saves `AppSettings` as JSON. The QML module
+  `Voxwright` (pages, components, theme, icons) is compiled into the same
+  library, so tests run exactly what the app runs.
+* `voxwright` is the executable: `main()` creates the system backend (or,
+  if no audio system starts, opens the window anyway with the reason in a
+  banner) and loads `Main.qml`.
+* `vox_app_tests` covers the settings store, the models, and the
+  controllers on the fake backend, plus a UI smoke test that loads the
+  real QML offscreen with the software renderer, clicks a voice tile, the
+  hear-myself toggle, and the Audio page, fails on any QML warning, and
+  saves screenshots.
+
+Icons are line drawings made for Voxwright, stored as SVG path data in
+`Icons.qml` and drawn with Qt Quick Shapes so they take theme colors.
+Each icon renders into a layer: the software renderer (used without a
+GPU, in virtual machines and remote desktop sessions, and in the tests)
+does not clip Shape nodes to a scrolling view, which the screenshot test
+showed as icons drawn outside the voice grid.
+
+| Voices | Audio |
+|---|---|
+| ![Voices page](images/screenshots/voices.png) | ![Audio page](images/screenshots/audio.png) |
+
+Rendered by the UI test on the fake backend (a synthetic 220 Hz tone on
+the microphone), so the meters and latency are real engine output.
 
 ## Effects as data
 
