@@ -1,0 +1,7 @@
+{
+  "name": "miniaudio",
+  "version": "0.11.25",
+  "description": "Audio playback and capture library in a single source file. Pinned by commit.",
+  "homepage": "https://github.com/mackron/miniaudio",
+  "license": "Unlicense OR MIT-0"
+}

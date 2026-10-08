@@ -1,0 +1,7 @@
+{
+  "name": "signalsmith-linear",
+  "version": "0.6.4",
+  "description": "Header-only FFT and STFT used by Signalsmith Stretch. Pinned by commit.",
+  "homepage": "https://github.com/Signalsmith-Audio/linear",
+  "license": "MIT"
+}

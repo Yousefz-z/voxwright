@@ -1,0 +1,157 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "$env{QT_ROOT_DIR}",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build/vcpkg_installed"
+      }
+    },
+    {
+      "name": "linux-base",
+      "hidden": true,
+      "inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
+      "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-linux" }
+    },
+    {
+      "name": "dev",
+      "displayName": "Linux debug (GCC)",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Linux optimized (GCC)",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "clang",
+      "displayName": "Linux debug (Clang)",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "asan",
+      "displayName": "Linux AddressSanitizer + UndefinedBehaviorSanitizer (Clang)",
+      "inherits": "clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "VOX_SANITIZE": "address;undefined",
+        "VOX_BUILD_TOOLS": "OFF"
+      }
+    },
+    {
+      "name": "tsan",
+      "displayName": "Linux ThreadSanitizer, engine and below (Clang)",
+      "inherits": "clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "VOX_SANITIZE": "thread",
+        "VOX_BUILD_APP": "OFF",
+        "VOX_BUILD_TOOLS": "OFF"
+      }
+    },
+    {
+      "name": "windows",
+      "displayName": "Windows (MSVC)",
+      "inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+      "architecture": { "value": "x64", "strategy": "external" },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
+      }
+    },
+    {
+      "name": "macos",
+      "displayName": "macOS universal (Apple Clang)",
+      "inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_OSX_ARCHITECTURES": "arm64;x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "12.0",
+        "VCPKG_TARGET_TRIPLET": "universal-osx"
+      }
+    },
+    {
+      "name": "macos-asan",
+      "displayName": "macOS AddressSanitizer + UndefinedBehaviorSanitizer",
+      "inherits": "macos",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "VCPKG_TARGET_TRIPLET": "arm64-osx",
+        "VOX_SANITIZE": "address;undefined",
+        "VOX_BUILD_TOOLS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "dev", "configurePreset": "dev" },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "clang", "configurePreset": "clang" },
+    { "name": "asan", "configurePreset": "asan" },
+    { "name": "tsan", "configurePreset": "tsan" },
+    { "name": "windows", "configurePreset": "windows" },
+    { "name": "macos", "configurePreset": "macos" },
+    { "name": "macos-asan", "configurePreset": "macos-asan" }
+  ],
+  "testPresets": [
+    {
+      "name": "test-base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error", "stopOnFailure": false, "timeout": 600 },
+      "environment": { "QT_QPA_PLATFORM": "offscreen" }
+    },
+    { "name": "dev", "inherits": "test-base", "configurePreset": "dev" },
+    { "name": "release", "inherits": "test-base", "configurePreset": "release" },
+    { "name": "clang", "inherits": "test-base", "configurePreset": "clang" },
+    {
+      "name": "asan",
+      "inherits": "test-base",
+      "configurePreset": "asan",
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=1:abort_on_error=1:strict_string_checks=1",
+        "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1",
+        "LSAN_OPTIONS": "suppressions=${sourceDir}/tools/sanitizers/lsan.supp"
+      }
+    },
+    {
+      "name": "tsan",
+      "inherits": "test-base",
+      "configurePreset": "tsan",
+      "environment": { "TSAN_OPTIONS": "halt_on_error=1:second_deadlock_stack=1" }
+    },
+    { "name": "windows", "inherits": "test-base", "configurePreset": "windows" },
+    { "name": "macos", "inherits": "test-base", "configurePreset": "macos" },
+    {
+      "name": "macos-asan",
+      "inherits": "test-base",
+      "configurePreset": "macos-asan",
+      "environment": { "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1" }
+    }
+  ]
+}

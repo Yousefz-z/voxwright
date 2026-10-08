@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest a new voice, effect, or app feature.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do?
+      description: Describe the goal, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Voices and effects
+        - Voice designer
+        - Soundboard
+        - Hotkeys
+        - Devices and virtual microphone
+        - Text to speech
+        - Settings, tray, startup
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: I checked docs/decisions.md and this does not conflict with a recorded scope decision.
+          required: true

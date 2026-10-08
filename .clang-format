@@ -1,0 +1,42 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++20
+ColumnLimit: 100
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AccessModifierOffset: -4
+NamespaceIndentation: None
+FixNamespaceComments: true
+PointerAlignment: Left
+ReferenceAlignment: Left
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortLambdasOnASingleLine: Inline
+AlwaysBreakTemplateDeclarations: Yes
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: Never
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^"'
+    Priority: 1
+  - Regex: '^<vox/'
+    Priority: 2
+  - Regex: '^<(Q|qt)'
+    Priority: 4
+  - Regex: '^<[a-z_]+>$'
+    Priority: 5
+  - Regex: '^<'
+    Priority: 3
+SortIncludes: CaseSensitive
+SpaceAfterTemplateKeyword: true
+InsertNewlineAtEOF: true
+...
+---
+Language: ObjC
+BasedOnStyle: LLVM
+ColumnLimit: 100
+IndentWidth: 4
+...

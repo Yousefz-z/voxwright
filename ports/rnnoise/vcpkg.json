@@ -1,0 +1,11 @@
+{
+  "name": "rnnoise",
+  "version-string": "0.1.1",
+  "description": "Recurrent neural network noise suppression for 48 kHz speech. Pinned by commit; model weights are part of the tagged sources.",
+  "homepage": "https://github.com/xiph/rnnoise",
+  "license": "BSD-3-Clause",
+  "dependencies": [
+    { "name": "vcpkg-cmake", "host": true },
+    { "name": "vcpkg-cmake-config", "host": true }
+  ]
+}

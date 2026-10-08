@@ -1,0 +1,8 @@
+{
+  "name": "signalsmith-stretch",
+  "version": "1.4.0",
+  "description": "Polyphonic pitch and time stretching with formant control. Pinned by commit.",
+  "homepage": "https://github.com/Signalsmith-Audio/signalsmith-stretch",
+  "license": "MIT",
+  "dependencies": [ "signalsmith-linear" ]
+}
