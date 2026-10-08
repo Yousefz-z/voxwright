@@ -102,9 +102,42 @@ bool AudioController::virtualCableFound() const {
 }
 
 QString AudioController::chatAppMicrophoneName() const {
-    // VB-CABLE's render side is "CABLE Input"; apps record from "CABLE Output".
-    // Loopback drivers such as BlackHole use one name for both sides.
+    // Apps record from the cable's other side. Loopback drivers such as
+    // BlackHole use one name for both sides. On Windows each side is named
+    // "<side> (<device>)": VB-CABLE's are "CABLE Input" and "CABLE Output",
+    // but Windows may show the render side as "Speakers" and users can
+    // rename either, so the recording side is found by its device part.
     QString name = settings_.virtualMicName;
+    const auto& recording = inputDevices_.devices();
+    const auto named = [&](const QString& wanted) {
+        return std::ranges::any_of(recording, [&](const devices::DeviceInfo& d) {
+            return QString::fromStdString(d.name) == wanted;
+        });
+    };
+    if (named(name)) {
+        return name;
+    }
+    const qsizetype open = name.lastIndexOf(QStringLiteral(" ("));
+    if (open > 0 && name.endsWith(QLatin1Char(')'))) {
+        const QString device = name.mid(open);
+        QString first;
+        for (const auto& d : recording) {
+            const QString candidate = QString::fromStdString(d.name);
+            if (!d.isVirtualCable || !candidate.endsWith(device, Qt::CaseInsensitive)) {
+                continue;
+            }
+            if (candidate.contains(QStringLiteral("Output"), Qt::CaseInsensitive)) {
+                return candidate;
+            }
+            if (first.isEmpty()) {
+                first = candidate;
+            }
+        }
+        if (!first.isEmpty()) {
+            return first;
+        }
+    }
+    // The recording side is not listed (yet): name the one VB-CABLE creates.
     if (name.contains(QStringLiteral("CABLE Input"), Qt::CaseInsensitive)) {
         name.replace(QStringLiteral("CABLE Input"), QStringLiteral("CABLE Output"),
                      Qt::CaseInsensitive);

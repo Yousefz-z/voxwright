@@ -50,6 +50,8 @@ public:
     [[nodiscard]] bool hasDevice(const QString& id) const { return indexOf(id) >= 0; }
     /// The first device recognised as a virtual cable, if any.
     [[nodiscard]] const devices::DeviceInfo* firstVirtualCable() const;
+    /// The devices as last set, without the extra entries.
+    [[nodiscard]] const std::vector<devices::DeviceInfo>& devices() const { return devices_; }
 
 signals:
     void countChanged();

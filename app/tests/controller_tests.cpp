@@ -53,6 +53,23 @@ TEST_CASE("First start picks the virtual cable and starts audio", "[app][control
     CHECK(active.input.value_or(vox::devices::StreamInfo{}).deviceId == "mic");
 }
 
+TEST_CASE("Chat apps are told the cable's recording side whatever the playback side is called",
+          "[app][controller]") {
+    // Windows can list VB-CABLE's playback side as "Speakers", and users
+    // can rename it; the recording side keeps its own name.
+    for (const std::string name :
+         {"Speakers (VB-Audio Virtual Cable)", "Voxwright Out (VB-Audio Virtual Cable)"}) {
+        TestApp t({.cable = true, .cableRecordingSide = true, .cableName = name});
+        auto& ctx = t.context();
+        CHECK(ctx.audio()->virtualMicDeviceId() == QStringLiteral("cable"));
+        CHECK(ctx.audio()->chatAppMicrophoneName() ==
+              QStringLiteral("CABLE Output (VB-Audio Virtual Cable)"));
+        CHECK(ctx.notifications()
+                  ->messageFor(QStringLiteral("virtual-mic-picked"))
+                  .contains(QStringLiteral("choose \"CABLE Output (VB-Audio Virtual Cable)\"")));
+    }
+}
+
 TEST_CASE("Without a virtual cable the app runs and explains how to get one", "[app][controller]") {
     TestApp t({.cable = false});
     auto& ctx = t.context();

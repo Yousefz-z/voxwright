@@ -56,6 +56,15 @@ TEST_CASE("The virtual microphone check passes when the cable loops back", "[app
     CHECK(t.context().micCheck()->message().contains(QStringLiteral("CABLE Output")));
 }
 
+TEST_CASE("The virtual microphone check finds the recording side when the playback side is "
+          "called Speakers",
+          "[app][miccheck]") {
+    TestApp t(
+        {.cable = true, .cableLoopback = true, .cableName = "Speakers (VB-Audio Virtual Cable)"});
+    CHECK(runCheck(t) == VirtualMicCheck::State::Passed);
+    CHECK(t.context().micCheck()->message().contains(QStringLiteral("CABLE Output")));
+}
+
 TEST_CASE("The virtual microphone check says what went wrong", "[app][miccheck][errors]") {
     SECTION("Nothing arrives") {
         TestApp t({.cable = true, .cableLoopback = false, .cableRecordingSide = true});

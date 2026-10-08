@@ -33,6 +33,8 @@ public:
         bool cableRecordingSide = false;
         /// "mock" keeps tests independent of the system's speech engines.
         QString speechEngine = QStringLiteral("mock");
+        /// The name of the cable's playback side.
+        std::string cableName = "CABLE Input (VB-Audio Virtual Cable)";
     };
 
     TestApp()
@@ -47,8 +49,8 @@ public:
             {"mic", "Studio Microphone", DeviceKind::Capture, true, 48000, 1, false});
         backend->addDevice({"phones", "Headphones", DeviceKind::Playback, true, 48000, 2, false});
         if (devices.cable) {
-            backend->addDevice({"cable", "CABLE Input (VB-Audio Virtual Cable)",
-                                DeviceKind::Playback, false, 48000, 2, false});
+            backend->addDevice(
+                {"cable", devices.cableName, DeviceKind::Playback, false, 48000, 2, false});
             if (devices.cableLoopback || devices.cableRecordingSide) {
                 backend->addDevice({"cable-out", "CABLE Output (VB-Audio Virtual Cable)",
                                     DeviceKind::Capture, false, 48000, 2, false});
