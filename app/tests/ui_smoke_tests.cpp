@@ -125,7 +125,11 @@ void click(QQuickWindow* window, QQuickItem* item) {
     scrollIntoView(item);
     const QPointF center = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
     QTest::mouseClick(window, Qt::LeftButton, {}, center.toPoint());
-    // Views create delegates on the next polish and render pass.
+    // Views create delegates, and layouts size new content, in the polish pass
+    // before a frame. Render one now instead of relying on the platform's frame
+    // timing: on the macOS runners the soundboard's tiles were still missing
+    // after the wait below.
+    static_cast<void>(window->grabWindow());
     QTest::qWait(60);
 }
 

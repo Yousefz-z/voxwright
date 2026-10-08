@@ -54,6 +54,12 @@ jobs:
           restore-keys: vcpkg-linux-
       - name: vcpkg
         run: |
+          # vcpkg fetches every port into one shallow scratch repository. Git's
+          # background maintenance after a fetch can rewrite its shallow file
+          # while the next fetch runs ("shallow file has changed since we read
+          # it"), so it is turned off for the job.
+          git config --global maintenance.auto false
+          git config --global gc.auto 0
           git clone https://github.com/microsoft/vcpkg.git "$RUNNER_TEMP/vcpkg"
           git -C "$RUNNER_TEMP/vcpkg" checkout "$VCPKG_COMMIT"
           "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
@@ -100,6 +106,12 @@ jobs:
           restore-keys: vcpkg-linux-
       - name: vcpkg
         run: |
+          # vcpkg fetches every port into one shallow scratch repository. Git's
+          # background maintenance after a fetch can rewrite its shallow file
+          # while the next fetch runs ("shallow file has changed since we read
+          # it"), so it is turned off for the job.
+          git config --global maintenance.auto false
+          git config --global gc.auto 0
           git clone https://github.com/microsoft/vcpkg.git "$RUNNER_TEMP/vcpkg"
           git -C "$RUNNER_TEMP/vcpkg" checkout "$VCPKG_COMMIT"
           "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
@@ -140,6 +152,12 @@ jobs:
       - name: vcpkg
         shell: pwsh
         run: |
+          # vcpkg fetches every port into one shallow scratch repository. Git's
+          # background maintenance after a fetch can rewrite its shallow file
+          # while the next fetch runs ("shallow file has changed since we read
+          # it"), so it is turned off for the job.
+          git config --global maintenance.auto false
+          git config --global gc.auto 0
           git clone https://github.com/microsoft/vcpkg.git "$env:RUNNER_TEMP\vcpkg"
           git -C "$env:RUNNER_TEMP\vcpkg" checkout $env:VCPKG_COMMIT
           & "$env:RUNNER_TEMP\vcpkg\bootstrap-vcpkg.bat" -disableMetrics
@@ -194,6 +212,12 @@ jobs:
           restore-keys: vcpkg-macos-
       - name: vcpkg
         run: |
+          # vcpkg fetches every port into one shallow scratch repository. Git's
+          # background maintenance after a fetch can rewrite its shallow file
+          # while the next fetch runs ("shallow file has changed since we read
+          # it"), so it is turned off for the job.
+          git config --global maintenance.auto false
+          git config --global gc.auto 0
           git clone https://github.com/microsoft/vcpkg.git "$RUNNER_TEMP/vcpkg"
           git -C "$RUNNER_TEMP/vcpkg" checkout "$VCPKG_COMMIT"
           "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics

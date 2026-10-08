@@ -80,11 +80,16 @@ TEST_CASE("Engine threads run concurrently with control changes", "[engine][thre
     std::thread cablePlayer = player("cable", 128, 48000.0);
     std::thread phonesPlayer = player("phones", 441, 44100.0);
 
-    // Control thread: switch voices, move sliders, fire sounds and speech.
-    const auto until = std::chrono::steady_clock::now() + std::chrono::milliseconds(1500);
+    // Control thread: switch voices, move sliders, fire sounds and speech. It
+    // runs a fixed number of rounds, enough to switch to every voice, instead
+    // of for a fixed time: what matters is that the changes overlap the device
+    // threads, and those three spinning threads can starve this one on a
+    // three-core machine (16 rounds in 1.5 s on the macOS runners).
+    const std::size_t rounds = voices.value().size() + 10;
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
     std::size_t step = 0;
     std::size_t events = 0;
-    while (std::chrono::steady_clock::now() < until) {
+    while (step < rounds && std::chrono::steady_clock::now() < deadline) {
         const auto& voice = voices.value()[step % voices.value().size()];
         CHECK(engine.setVoice(voice, {}, registry));
         CHECK(engine.setVoiceParameter(0, 0, 0.3F));
@@ -114,6 +119,6 @@ TEST_CASE("Engine threads run concurrently with control changes", "[engine][thre
 
     INFO(step << " control rounds, " << events << " events");
     CHECK(finite);
-    CHECK(step > 20);
+    CHECK(step == rounds);
     CHECK(events > 0);
 }

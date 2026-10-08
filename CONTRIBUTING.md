@@ -34,7 +34,10 @@ and `aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 ...`, then set
 `VCPKG_ROOT` and `QT_ROOT_DIR` (`...\6.8.3\msvc2022_64`).
 
 The first configure builds the C/C++ dependencies from the pinned overlay ports
-in `ports/`; later configures reuse vcpkg's binary cache.
+in `ports/`; later configures reuse vcpkg's binary cache. If it stops with
+"shallow file has changed since we read it", Git's background maintenance ran
+during a source fetch: configure again, or run
+`git config --global maintenance.auto false` as CI does.
 
 ## The checks CI runs
 
