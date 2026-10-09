@@ -14,6 +14,10 @@ constexpr float kInputGainRampMs = 20.0F;
 constexpr float kLimiterCeilingDb = -1.0F;
 constexpr float kDefaultGateThresholdDb = -50.0F;
 constexpr float kGateRangeDb = -40.0F;
+/// Speech through the voice keeps the microphone paused, and the voice in
+/// the headphones, this long after the clip: longer than a voice chain's
+/// delay, so the end of the speech is heard.
+constexpr double kSpeechVoiceHoldMs = 150.0;
 
 /// Moves `value` towards `target` by at most `step`.
 [[nodiscard]] float approach(float value, float target, float step) noexcept {
@@ -336,6 +340,22 @@ void ProcessingGraph::conditionInput(std::span<const float> input, std::span<flo
     transmit_.process(in);
 }
 
+void ProcessingGraph::pauseMicForSpeech(std::span<float> in) noexcept {
+    if (speechNow_ != nullptr && speechNow_->throughVoice) {
+        speechVoiceHold_ = static_cast<std::size_t>(kSpeechVoiceHoldMs * kEngineRate / 1000.0);
+    } else {
+        speechVoiceHold_ -= std::min(speechVoiceHold_, in.size());
+    }
+    const float target = speechVoiceHold_ > 0 ? 0.0F : 1.0F;
+    if (target == 1.0F && micGain_ == 1.0F) {
+        return;
+    }
+    for (float& s : in) {
+        micGain_ = approach(micGain_, target, crossfadeStep_);
+        s *= micGain_;
+    }
+}
+
 void ProcessingGraph::renderSpeech(std::span<float> in, std::span<float> speech) noexcept {
     std::fill(speech.begin(), speech.end(), 0.0F);
     if (speechNow_ == nullptr) {
@@ -351,8 +371,10 @@ void ProcessingGraph::renderSpeech(std::span<float> in, std::span<float> speech)
         s *= speechLevel_.next();
     }
     if (speechNow_->throughVoice) {
-        // Speech replaces nothing: it is mixed into the voice input, after
-        // push-to-talk so that a muted microphone does not silence it.
+        // Speech goes into the voice in place of the microphone, after
+        // push-to-talk so that a muted microphone does not silence it. The
+        // microphone is faded out (see pauseMicForSpeech) so that the voice,
+        // which then carries only the speech, can go to the headphones.
         for (std::size_t i = 0; i < in.size(); ++i) {
             in[i] += speech[i];
         }
@@ -400,6 +422,7 @@ void ProcessingGraph::processBlock(std::span<const float> input, std::span<float
     const std::size_t n = virtualMic.size();
     auto in = std::span<float>(in_).first(n);
     conditionInput(input, in);
+    pauseMicForSpeech(in);
 
     auto speech = std::span<float>(speechBuffer_).first(n);
     renderSpeech(in, speech);
@@ -414,14 +437,20 @@ void ProcessingGraph::processBlock(std::span<const float> input, std::span<float
     const float duckStep = (sounds_.voiceDuck() - duck_) / static_cast<float>(n);
     const float hearTarget = hearMyself_ ? 1.0F : 0.0F;
     const float soundsMonitorTarget = soundsInMonitor_ ? 1.0F : 0.0F;
+    // While speech plays through the voice the microphone is paused, so the
+    // voice carries only the speech and goes to the headphones like speech
+    // that bypasses the voice.
+    const float speechVoiceTarget = speechVoiceHold_ > 0 ? 1.0F : 0.0F;
     for (std::size_t i = 0; i < n; ++i) {
         duck_ += duckStep;
         const float v = voice[i] * voiceLevel_.next() * duck_;
         const float s = soundsLevel_.next();
         hearGain_ = approach(hearGain_, hearTarget, crossfadeStep_);
+        speechVoiceGain_ = approach(speechVoiceGain_, speechVoiceTarget, crossfadeStep_);
         soundsMonitorGain_ = approach(soundsMonitorGain_, soundsMonitorTarget, crossfadeStep_);
         virtualMic[i] = v + soundsAll[i] * s + speech[i];
-        monitor[i] = (v * hearGain_ + soundsMonitor[i] * s * soundsMonitorGain_ + speech[i]) *
+        monitor[i] = (v * std::max(hearGain_, speechVoiceGain_) +
+                      soundsMonitor[i] * s * soundsMonitorGain_ + speech[i]) *
                      monitorLevel_.next();
     }
     micLimiter_.process(virtualMic);
