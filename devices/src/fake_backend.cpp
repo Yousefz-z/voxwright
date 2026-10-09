@@ -70,6 +70,18 @@ void FakeBackend::removeDevice(const std::string& id) {
     notify({DeviceEventKind::DeviceListChanged, id});
 }
 
+void FakeBackend::setDefault(DeviceKind kind, const std::string& id) {
+    {
+        const std::scoped_lock lock(mutex_);
+        for (DeviceInfo& d : devices_) {
+            if (d.kind == kind) {
+                d.isDefault = d.id == id;
+            }
+        }
+    }
+    notify({DeviceEventKind::DeviceListChanged, {}});
+}
+
 void FakeBackend::failNextOpen(const std::string& deviceId, Error error) {
     const std::scoped_lock lock(mutex_);
     failures_.insert_or_assign(deviceId, std::move(error));

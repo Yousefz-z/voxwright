@@ -9,6 +9,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSignalSpy>
+#include <QTest>
+
+#include <array>
+#include <optional>
+#include <string>
 
 using namespace vox::app;
 using namespace vox::app::test;
@@ -67,6 +72,71 @@ TEST_CASE("Chat apps are told the cable's recording side whatever the playback s
         CHECK(ctx.notifications()
                   ->messageFor(QStringLiteral("virtual-mic-picked"))
                   .contains(QStringLiteral("choose \"CABLE Output (VB-Audio Virtual Cable)\"")));
+    }
+}
+
+namespace {
+
+/// The device ids the engine has open: microphone, virtual microphone, headphones.
+std::array<std::string, 3> openDevices(TestApp& t) {
+    const auto active = t.context().engine().activeDevices();
+    const auto id = [](const std::optional<vox::devices::StreamInfo>& s) {
+        return s ? s->deviceId : std::string{"(none)"};
+    };
+    return {id(active.input), id(active.virtualMic), id(active.monitor)};
+}
+
+} // namespace
+
+TEST_CASE("The microphone and headphones stay off the virtual microphone's cable",
+          "[app][controller]") {
+    using Open = std::array<std::string, 3>;
+    const Open expected{"mic", "cable", "phones"};
+
+    SECTION("Chosen in the settings") {
+        // Recording from the cable's output would feed Voxwright its own
+        // voice (an echo that repeats); playing into its input would send
+        // everything to other apps twice.
+        TestApp t({.cable = true, .cableRecordingSide = true},
+                  QStringLiteral(R"({"version": 1, "app": {"firstRunDone": true},
+                                     "devices": {"inputId": "cable-out", "monitorId": "cable"}})"));
+        CHECK(openDevices(t) == expected);
+        auto* notes = t.context().notifications();
+        CHECK(notes->messageFor(QStringLiteral("input-on-cable"))
+                  .contains(QStringLiteral("Using \"Studio Microphone\" instead")));
+        CHECK(notes->messageFor(QStringLiteral("monitor-on-cable"))
+                  .contains(QStringLiteral("Playing to \"Headphones\" instead")));
+    }
+    SECTION("Reached through the system default") {
+        TestApp t({.cable = true, .cableRecordingSide = true, .cableIsDefault = true});
+        CHECK(openDevices(t) == expected);
+        CHECK(t.context()
+                  .notifications()
+                  ->messageFor(QStringLiteral("input-on-cable"))
+                  .contains(QStringLiteral("The system default microphone is \"CABLE Output")));
+    }
+    SECTION("When a default moves onto the cable while Voxwright runs, and back") {
+        TestApp t({.cable = true, .cableRecordingSide = true});
+        auto* notes = t.context().notifications();
+        REQUIRE(openDevices(t) == expected);
+        t.backend().setDefault(DeviceKind::Capture, "cable-out");
+        t.backend().setDefault(DeviceKind::Playback, "cable");
+        REQUIRE(QTest::qWaitFor(
+            [&] {
+                return notes->contains(QStringLiteral("input-on-cable")) &&
+                       notes->contains(QStringLiteral("monitor-on-cable"));
+            },
+            2000));
+        CHECK(openDevices(t) == expected);
+        t.backend().setDefault(DeviceKind::Capture, "mic");
+        t.backend().setDefault(DeviceKind::Playback, "phones");
+        REQUIRE(QTest::qWaitFor(
+            [&] {
+                return !notes->contains(QStringLiteral("input-on-cable")) &&
+                       !notes->contains(QStringLiteral("monitor-on-cable"));
+            },
+            2000));
+        CHECK(openDevices(t) == expected);
     }
 }
 

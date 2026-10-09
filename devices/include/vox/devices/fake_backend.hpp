@@ -16,6 +16,9 @@ class FakeBackend final : public AudioBackend {
 public:
     void addDevice(DeviceInfo info);
     void removeDevice(const std::string& id);
+    /// Makes `id` the system default of its kind, as when the user or an
+    /// installer changes it in the system settings.
+    void setDefault(DeviceKind kind, const std::string& id);
     /// The next open of `deviceId` fails with `error`.
     void failNextOpen(const std::string& deviceId, Error error);
 

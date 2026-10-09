@@ -35,6 +35,9 @@ public:
         QString speechEngine = QStringLiteral("mock");
         /// The name of the cable's playback side.
         std::string cableName = "CABLE Input (VB-Audio Virtual Cable)";
+        /// The cable's sides are the system defaults, as after VB-CABLE's
+        /// installer made them so.
+        bool cableIsDefault = false;
     };
 
     TestApp()
@@ -45,15 +48,17 @@ public:
                      const QHash<QString, QByteArray>& files = {}) {
         auto backend = std::make_unique<devices::FakeBackend>();
         backend->setTime(0.0);
+        const bool cableDefault = devices.cable && devices.cableIsDefault;
         backend->addDevice(
-            {"mic", "Studio Microphone", DeviceKind::Capture, true, 48000, 1, false});
-        backend->addDevice({"phones", "Headphones", DeviceKind::Playback, true, 48000, 2, false});
+            {"mic", "Studio Microphone", DeviceKind::Capture, !cableDefault, 48000, 1, false});
+        backend->addDevice(
+            {"phones", "Headphones", DeviceKind::Playback, !cableDefault, 48000, 2, false});
         if (devices.cable) {
             backend->addDevice(
-                {"cable", devices.cableName, DeviceKind::Playback, false, 48000, 2, false});
+                {"cable", devices.cableName, DeviceKind::Playback, cableDefault, 48000, 2, false});
             if (devices.cableLoopback || devices.cableRecordingSide) {
                 backend->addDevice({"cable-out", "CABLE Output (VB-Audio Virtual Cable)",
-                                    DeviceKind::Capture, false, 48000, 2, false});
+                                    DeviceKind::Capture, cableDefault, 48000, 2, false});
             }
         }
         loopback_ = devices.cableLoopback;
