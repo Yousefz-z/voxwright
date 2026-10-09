@@ -19,6 +19,7 @@ Item {
     }
     Shape {
         anchors.fill: parent
+        preferredRendererType: Shape.CurveRenderer // smooth edges, as in Icon.qml
         antialiasing: true
         ShapePath {
             scale: Qt.size(root.width / 32, root.height / 32)
