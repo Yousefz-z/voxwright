@@ -96,7 +96,7 @@ key presses.
 | T8 | Both | Turn on "Start when you sign in" and "Start hidden in the tray"; sign out and in. Then turn start at sign-in off and sign out and in again. | Voxwright starts hidden in the tray the first time and not at all the second time. On macOS it is listed under Login Items. | | | |
 | T9 | Both | Text to speech with each system voice offered, with "Through my voice effect" off and on, while a second account listens on Discord. | The text is heard clearly in the chosen voice, through the voice effect when switched on. | | | |
 | T10 | Both | Follow each app path on the Settings page in current Discord, Zoom, Teams, and OBS. | Each path leads to the microphone setting; note any app that moved it. | | | |
-| T11 | Windows 11 | Check the file properties of Voxwright.exe. | Version 0.1.0, product name and description filled in, the Voxwright icon. | 2026-10-08 | Scripted (Yousef's PC) | Partial. File version 0.1.0, product name and description read from the installed file. The icon was not checked. |
+| T11 | Windows 11 | Check the file properties of Voxwright.exe. | The version in `CMakeLists.txt`, product name and description filled in, the Voxwright icon. | 2026-10-08 | Scripted (Yousef's PC) | Partial. File version 0.1.0, product name and description read from the installed file. The icon was not checked. |
 | T12 | macOS 13+ | Build `drivers/macos`, install it as in its README, and run Voxwright's virtual microphone check against "Voxwright Virtual Microphone". | Record whether it loads (Audio MIDI Setup), passes the check, and survives a `coreaudiod` restart. Untested so far. | | | |
 
 ## Neural voice track (milestone 8, VOX_ENABLE_ML builds only)
