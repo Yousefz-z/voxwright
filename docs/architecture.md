@@ -65,7 +65,8 @@ mic (any rate, any channels)
   --> noise gate (optional)
   --> feedback detector (watches for howl while hear-myself is on)
   --> transmit control (mute, push-to-talk, push-to-mute, censor beep)
-  --> + speech routed "through my voice"
+  --> microphone paused (20 ms fade) while speech plays "through my voice",
+      and that speech added (D43)
   --> voice chain (preset blocks, tone, background ambience;
                    20 ms crossfade on switch, crossfade to dry when off)
   --> voice level x voice duck (a sound with "mute my voice" playing)
@@ -76,7 +77,8 @@ soundboard player ---- all sounds ---+       sounds except "mute for me"
 speech player ------ speech (direct) +                      |
                              v                              v
                     virtual mic mix            monitor mix: voice x hear-myself
-                    --> limiter (-1 dBFS)      + sounds + speech, x monitor level
+                    --> limiter (-1 dBFS)        (or speech through the voice)
+                                               + sounds + speech, x monitor level
                     --> output stage           --> limiter (-1 dBFS)
                         (resample, drift trim) --> output stage
                     --> virtual cable          --> headphones

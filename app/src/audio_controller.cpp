@@ -33,6 +33,22 @@ double toDb(float linear) {
     return linear > 1e-6F ? 20.0 * std::log10(static_cast<double>(linear)) : -120.0;
 }
 
+/// " (VB-Audio Virtual Cable)" in "CABLE Input (VB-Audio Virtual Cable)":
+/// Windows names each side of a device "<side> (<device>)". Empty otherwise.
+QString devicePart(const QString& name) {
+    const qsizetype open = name.lastIndexOf(QStringLiteral(" ("));
+    return open > 0 && name.endsWith(QLatin1Char(')')) ? name.mid(open) : QString{};
+}
+
+/// The device that `id` selects in `devices`; an empty id is the default.
+const devices::DeviceInfo* selectedDevice(const std::vector<devices::DeviceInfo>& devices,
+                                          const std::string& id) {
+    const auto it = std::ranges::find_if(devices, [&](const devices::DeviceInfo& d) {
+        return id.empty() ? d.isDefault : d.id == id;
+    });
+    return it == devices.end() ? nullptr : &*it;
+}
+
 } // namespace
 
 AudioController::AudioController(engine::AudioEngine& engine, AppSettings& settings,
@@ -117,9 +133,7 @@ QString AudioController::chatAppMicrophoneName() const {
     if (named(name)) {
         return name;
     }
-    const qsizetype open = name.lastIndexOf(QStringLiteral(" ("));
-    if (open > 0 && name.endsWith(QLatin1Char(')'))) {
-        const QString device = name.mid(open);
+    if (const QString device = devicePart(name); !device.isEmpty()) {
         QString first;
         for (const auto& d : recording) {
             const QString candidate = QString::fromStdString(d.name);
@@ -143,6 +157,81 @@ QString AudioController::chatAppMicrophoneName() const {
                      Qt::CaseInsensitive);
     }
     return name;
+}
+
+bool AudioController::onVirtualMicCable(const devices::DeviceInfo& device) const {
+    const QString name = QString::fromStdString(device.name);
+    // BlackHole uses one name for both sides.
+    if (QString::fromStdString(device.id) == settings_.virtualMicId ||
+        name == settings_.virtualMicName) {
+        return true;
+    }
+    const QString cable = devicePart(settings_.virtualMicName);
+    return device.isVirtualCable && !cable.isEmpty() &&
+           devicePart(name).compare(cable, Qt::CaseInsensitive) == 0;
+}
+
+bool AudioController::selectsVirtualMicCable(const DeviceListModel& list, const QString& id) const {
+    if (!settings_.useVirtualMic || !virtualMicDevices_.hasDevice(settings_.virtualMicId)) {
+        return false;
+    }
+    const std::string effective = list.hasDevice(id) ? id.toStdString() : std::string{};
+    const devices::DeviceInfo* device = selectedDevice(list.devices(), effective);
+    return device != nullptr && onVirtualMicCable(*device);
+}
+
+void AudioController::keepOffVirtualMicCable(engine::DeviceRole role, const DeviceListModel& list,
+                                             std::string& id, bool& use) {
+    const bool input = role == engine::DeviceRole::Input;
+    const QString key =
+        input ? QStringLiteral("input-on-cable") : QStringLiteral("monitor-on-cable");
+    const bool onCable = use && selectsVirtualMicCable(list, QString::fromStdString(id));
+    (input ? inputOnCable_ : monitorOnCable_) = onCable;
+    if (!onCable) {
+        notifications_.dismiss(key);
+        return;
+    }
+    const auto& devices = list.devices();
+    const QString cable = QString::fromStdString(selectedDevice(devices, id)->name);
+    const bool viaDefault = id.empty();
+    QString instead;
+    if (const auto other = std::ranges::find_if(
+            devices, [](const devices::DeviceInfo& d) { return !d.isVirtualCable; });
+        other != devices.end()) {
+        id = other->id;
+        instead = QString::fromStdString(other->name);
+    } else {
+        use = false;
+    }
+    QString message;
+    if (input) {
+        message = viaDefault ? tr("The system default microphone is \"%1\".").arg(cable)
+                             : tr("\"%1\" is chosen as the microphone.").arg(cable);
+        message += QLatin1Char(' ') +
+                   tr("It carries Voxwright's own output, so Voxwright would hear itself and "
+                      "echo.");
+        message += QLatin1Char(' ') +
+                   (instead.isEmpty()
+                        ? tr("Choose your microphone in Audio settings.")
+                        : tr("Using \"%1\" instead; choose your microphone in Audio settings.")
+                              .arg(instead));
+    } else {
+        message = viaDefault ? tr("The system default output is \"%1\".").arg(cable)
+                             : tr("\"%1\" is chosen as your headphones.").arg(cable);
+        message += QLatin1Char(' ') +
+                   tr("Other apps record from it, so they would hear your sounds, and your "
+                      "voice with Hear myself on, twice.");
+        message +=
+            QLatin1Char(' ') +
+            (instead.isEmpty() ? tr("Choose your headphones in Audio settings.")
+                               : tr("Playing to \"%1\" instead; choose your headphones in Audio "
+                                    "settings.")
+                                     .arg(instead));
+    }
+    notifications_.post(key, NotificationModel::Level::Warning,
+                        input ? tr("Microphone set to the virtual cable")
+                              : tr("Headphones set to the virtual cable"),
+                        message, tr("Audio settings"), QStringLiteral("open-audio"));
 }
 
 QString AudioController::virtualCableProduct() {
@@ -209,6 +298,12 @@ engine::DeviceSelection AudioController::resolveSelection() {
                             tr("Audio settings"), QStringLiteral("open-audio"));
         s.monitorId.clear();
     }
+    // Never record from, or play the monitor into, the cable that carries the
+    // virtual microphone: Voxwright would hear itself, or other apps would get
+    // everything twice. "System default" lands there when installing the
+    // cable made it the system default.
+    keepOffVirtualMicCable(engine::DeviceRole::Input, inputDevices_, s.inputId, s.useInput);
+    keepOffVirtualMicCable(engine::DeviceRole::Monitor, monitorDevices_, s.monitorId, s.useMonitor);
     return s;
 }
 
@@ -544,8 +639,13 @@ void AudioController::handleEvent(const engine::EngineEvent& event) {
         break;
     case Kind::DevicesChanged:
         refreshDevices();
-        if (pickVirtualCableIfUnset()) {
-            startEngine(); // a cable was just installed: start using it
+        // Start again if a cable was just installed, or if a system default
+        // moved onto the virtual microphone's cable (or off it): installing
+        // VB-CABLE can make it the default microphone and output.
+        if (pickVirtualCableIfUnset() ||
+            selectsVirtualMicCable(inputDevices_, settings_.inputId) != inputOnCable_ ||
+            selectsVirtualMicCable(monitorDevices_, settings_.monitorId) != monitorOnCable_) {
+            startEngine();
         }
         break;
     case Kind::SoundFinished:

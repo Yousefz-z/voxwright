@@ -129,6 +129,8 @@ private:
     void processBlock(std::span<const float> input, std::span<float> virtualMic,
                       std::span<float> monitor) noexcept;
     void conditionInput(std::span<const float> input, std::span<float> in) noexcept;
+    /// Fades the microphone out while speech plays through the voice.
+    void pauseMicForSpeech(std::span<float> in) noexcept;
     void renderSpeech(std::span<float> in, std::span<float> speech) noexcept;
     void renderVoice(std::span<const float> in, std::span<float> voice) noexcept;
     void publishMeters() noexcept;
@@ -173,6 +175,12 @@ private:
     SoundboardPlayer sounds_;
     float duck_ = 1.0F;
     SpeechClip* speechNow_ = nullptr;
+    /// Speech through the voice pauses the microphone and puts the voice in
+    /// the headphones; frames left of that, which outlast the clip by the
+    /// voice chain's delay.
+    std::size_t speechVoiceHold_ = 0;
+    float micGain_ = 1.0F;         ///< 0 while speech plays through the voice.
+    float speechVoiceGain_ = 0.0F; ///< 1 while speech plays through the voice.
 
     // Mix.
     bool hearMyself_ = false;

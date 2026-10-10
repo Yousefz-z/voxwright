@@ -191,6 +191,17 @@ private:
     void handleEvent(const engine::EngineEvent& event);
     /// Selects the first virtual cable on first use; true if it picked one.
     bool pickVirtualCableIfUnset();
+    /// True if `device` belongs to the cable that carries the virtual
+    /// microphone: its playback side, another input of the same cable, or the
+    /// side other apps record from.
+    [[nodiscard]] bool onVirtualMicCable(const devices::DeviceInfo& device) const;
+    /// True if the device that `id` selects in `list` (the system default if
+    /// `id` is empty or not connected) is on the virtual microphone's cable.
+    [[nodiscard]] bool selectsVirtualMicCable(const DeviceListModel& list, const QString& id) const;
+    /// Moves the microphone or the headphones off the virtual microphone's
+    /// cable, to the first device that is not a cable, and says why.
+    void keepOffVirtualMicCable(engine::DeviceRole role, const DeviceListModel& list,
+                                std::string& id, bool& use);
 
     engine::AudioEngine& engine_;
     AppSettings& settings_;
@@ -201,6 +212,10 @@ private:
     QTimer pollTimer_;
     bool checkPermission_ = true;
     bool muted_ = false;
+    /// Whether the last start found the microphone or the headphones on the
+    /// virtual microphone's cable (and moved them off it).
+    bool inputOnCable_ = false;
+    bool monitorOnCable_ = false;
     engine::EngineStats stats_;
     double inputDb_ = -120.0;
     double outputDb_ = -120.0;

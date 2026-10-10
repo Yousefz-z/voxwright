@@ -22,6 +22,10 @@ Item {
 
     Shape {
         anchors.fill: parent
+        // The default renderer leaves stair-stepped edges on the GPU unless
+        // the scene is multisampled; the curve renderer draws them smooth.
+        // The software renderer ignores this and antialiases anyway.
+        preferredRendererType: Shape.CurveRenderer
         antialiasing: true
 
         ShapePath {

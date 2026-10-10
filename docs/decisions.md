@@ -422,3 +422,18 @@ below 0.065; the check passed or failed with the runner's speed. Builds
 without `NDEBUG` now multiply timing budgets by 4, so a debug build must
 still keep up with real time. The real budget stays enforced, unscaled, by
 the optimized release and Windows runs.
+
+## D43. Speech through the voice pauses the microphone
+
+*2026-10-09.* Speech with "Through my voice effect" on was added to the
+microphone before the voice chain, so the processed speech was mixed with
+the room and reached the headphones only as part of the voice, that is,
+only with hear-myself on. With hear-myself off, as most people use it,
+the user heard nothing and took the feature for broken. Now the
+microphone fades out (20 ms) while such speech plays and stays out
+150 ms after it, longer than a voice chain's delay; the voice then
+carries only the speech and goes to the headphones too. Opening the
+headphones to the voice without pausing the microphone would also put
+the live microphone in the user's ears and could howl through speakers.
+Other apps get the speech alone, in the voice, as they do the speech
+that bypasses the voice.

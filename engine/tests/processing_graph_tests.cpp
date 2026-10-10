@@ -8,6 +8,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
+#include <cmath>
+#include <span>
+
 using namespace vox::engine;
 using namespace vox::engine::test;
 
@@ -268,6 +272,37 @@ TEST_CASE("Speech plays in order, optionally through the voice", "[engine][graph
               return e.kind == EngineEventKind::SpeechFinished;
           }) == 2);
     g.collectGarbage();
+}
+
+TEST_CASE("Speech through the voice reaches the headphones and pauses the microphone",
+          "[engine][graph]") {
+    // Hear-myself is off, as usual: the user still hears what is said for
+    // them, and other apps get the speech in the voice, not mixed with the room.
+    ProcessingGraph g(EngineConfig{});
+    REQUIRE(g.setVoiceChain(buildChain(gainVoice(-12.0F))) == nullptr);
+    auto speech = std::make_unique<SpeechClip>();
+    speech->samples.assign(9600, 0.5F); // 0.2 s
+    speech->throughVoice = true;
+    const auto rejected = g.playSpeech(std::move(speech));
+    REQUIRE(rejected == nullptr);
+    const auto mic = vox::testing::sine(440.0, 1.0, kFs, 0.2F);
+    const auto out = runGraph(g, mic);
+    const std::size_t lat = limiterLatency(g);
+    constexpr float kVoiceGain = 0.2512F;                  // the -12 dB voice
+    constexpr float kSpoken = 0.5F * 0.7079F * kVoiceGain; // speech level -3 dB
+    const auto window = [&](const std::vector<float>& x, std::size_t from, std::size_t n) {
+        return std::span<const float>(x).subspan(from + lat, n);
+    };
+    // Mid-clip, past the 20 ms fade: both outputs carry the speech alone.
+    for (const auto* x : {&out.mic, &out.monitor}) {
+        const auto w = window(*x, 4800, 2400);
+        CHECK(std::abs(*std::ranges::min_element(w) - kSpoken) < 3e-3F);
+        CHECK(std::abs(*std::ranges::max_element(w) - kSpoken) < 3e-3F);
+    }
+    // Well after the clip: the microphone is back and the headphones are quiet.
+    CHECK(std::abs(vox::testing::rms(window(out.mic, 24000, 4800)) -
+                   0.2 * static_cast<double>(kVoiceGain) / std::sqrt(2.0)) < 2e-3);
+    CHECK(vox::testing::rms(window(out.monitor, 24000, 4800)) < 1e-4);
 }
 
 TEST_CASE("Feedback guard turns hear-myself off when the monitor howls", "[engine][graph]") {
