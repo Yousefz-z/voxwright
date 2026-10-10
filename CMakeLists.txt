@@ -8,7 +8,7 @@ if(VOX_ENABLE_ML)
 endif()
 
 project(Voxwright
-    VERSION 0.1.0
+    VERSION 0.1.1
     DESCRIPTION "Real-time voice changer and soundboard"
     HOMEPAGE_URL "https://github.com/Yousefz-z/voxwright"
     LANGUAGES C CXX)
