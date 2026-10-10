@@ -283,7 +283,8 @@ TEST_CASE("Speech through the voice reaches the headphones and pauses the microp
     auto speech = std::make_unique<SpeechClip>();
     speech->samples.assign(9600, 0.5F); // 0.2 s
     speech->throughVoice = true;
-    REQUIRE(g.playSpeech(std::move(speech)) == nullptr);
+    const auto rejected = g.playSpeech(std::move(speech));
+    REQUIRE(rejected == nullptr);
     const auto mic = vox::testing::sine(440.0, 1.0, kFs, 0.2F);
     const auto out = runGraph(g, mic);
     const std::size_t lat = limiterLatency(g);
