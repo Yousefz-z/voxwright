@@ -300,7 +300,7 @@ TEST_CASE("Speech through the voice reaches the headphones and pauses the microp
     }
     // Well after the clip: the microphone is back and the headphones are quiet.
     CHECK(std::abs(vox::testing::rms(window(out.mic, 24000, 4800)) -
-                   0.2 * kVoiceGain / std::sqrt(2.0)) < 2e-3);
+                   0.2 * static_cast<double>(kVoiceGain) / std::sqrt(2.0)) < 2e-3);
     CHECK(vox::testing::rms(window(out.monitor, 24000, 4800)) < 1e-4);
 }
 
