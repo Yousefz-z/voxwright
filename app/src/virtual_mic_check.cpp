@@ -109,9 +109,16 @@ double VirtualMicCheck::matchStrength(const std::vector<float>& fullRecording,
     return std::min(best, 1.0);
 }
 
-void VirtualMicCheck::start(const QString& recordingName) {
+void VirtualMicCheck::start(const QString& recordingName, const QString& selectedOutput,
+                            const QString& cableToChoose) {
     cancel();
     deviceName_ = recordingName;
+    if (!cableToChoose.isEmpty() && selectedOutput.isEmpty()) {
+        setState(State::Failed, tr("No virtual microphone output is selected. Choose \"%1\" on "
+                                   "the Audio page, then test again.")
+                                    .arg(cableToChoose));
+        return;
+    }
     auto devices = backend_.enumerate(devices::DeviceKind::Capture);
     if (!devices) {
         setState(State::Failed, QString::fromStdString(devices.error().message));
@@ -122,6 +129,15 @@ void VirtualMicCheck::start(const QString& recordingName) {
         return QString::fromStdString(d.name) == recordingName;
     });
     if (it == list.end()) {
+        if (!cableToChoose.isEmpty()) {
+            // Not a missing driver: the output chosen is not a cable at all.
+            setState(State::Failed,
+                     tr("\"%1\" is not a virtual cable, so chat apps cannot record your voice "
+                        "from it. Choose \"%2\" as the virtual microphone output on the Audio "
+                        "page, then test again.")
+                         .arg(selectedOutput, cableToChoose));
+            return;
+        }
         setState(State::Failed,
                  tr("\"%1\" is not in the list of recording devices. Restart the computer "
                     "after installing the virtual cable, then try again.")

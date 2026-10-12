@@ -124,6 +124,21 @@ bool AudioController::virtualCableFound() const {
     return virtualMicDevices_.firstVirtualCable() != nullptr;
 }
 
+bool AudioController::virtualMicIsCable() const {
+    if (!settings_.useVirtualMic) {
+        return false;
+    }
+    const auto& list = virtualMicDevices_.devices();
+    return std::ranges::any_of(list, [this](const devices::DeviceInfo& d) {
+        return d.isVirtualCable && QString::fromStdString(d.id) == settings_.virtualMicId;
+    });
+}
+
+QString AudioController::suggestedCableName() const {
+    const devices::DeviceInfo* cable = virtualMicDevices_.firstVirtualCable();
+    return cable != nullptr ? QString::fromStdString(cable->name) : QString();
+}
+
 QString AudioController::chatAppMicrophoneName() const {
     // Apps record from the cable's other side. Loopback drivers such as
     // BlackHole use one name for both sides. On Windows each side is named

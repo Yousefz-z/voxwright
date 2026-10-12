@@ -68,8 +68,10 @@ Popup {
             text: [
                 qsTr("Voxwright changes your voice as you speak and plays it into a virtual microphone that Discord, Zoom, Teams, OBS, and games can use. This takes a minute."),
                 qsTr("Pick the microphone you speak into, then say something: the bar should move."),
-                root.app.audio.virtualCableFound
+                root.app.audio.virtualMicIsCable
                     ? qsTr("Voxwright plays your changed voice into \"%1\". In your chat app or game, choose \"%2\" as the microphone.").arg(root.app.audio.virtualMicName).arg(root.app.audio.chatAppMicrophoneName)
+                    : root.app.audio.virtualCableFound
+                    ? qsTr("Other apps cannot record your voice from the output selected now. Choose \"%1\" as the virtual microphone output on the Audio page.").arg(root.app.audio.suggestedCableName)
                     : qsTr("Other apps hear Voxwright through a virtual audio cable. Install %1 (free), then press Check again. You may need to restart the computer after installing it.").arg(root.app.audio.virtualCableProduct),
                 qsTr("Choose headphones to hear your changed voice and sounds. Use headphones rather than speakers so your microphone does not pick yourself up."),
                 qsTr("Pick a voice on the Voices page and set keys for push-to-talk and your favorite sounds on the Hotkeys page. You can run this guide again from Settings.")

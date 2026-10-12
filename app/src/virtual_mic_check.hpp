@@ -40,8 +40,11 @@ public:
     ~VirtualMicCheck() override;
 
     /// Listens on the capture device called `recordingName` (for VB-CABLE,
-    /// "CABLE Output") while the engine plays the chirp.
-    Q_INVOKABLE void start(const QString& recordingName);
+    /// "CABLE Output") while the engine plays the chirp. When the selected
+    /// output is not a virtual cable, `cableToChoose` names the cable to
+    /// pick instead and `selectedOutput` the output in use (empty: none).
+    Q_INVOKABLE void start(const QString& recordingName, const QString& selectedOutput = {},
+                           const QString& cableToChoose = {});
     Q_INVOKABLE void cancel();
 
     [[nodiscard]] State state() const { return state_; }

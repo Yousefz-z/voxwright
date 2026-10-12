@@ -104,6 +104,8 @@ public:
     /// Runs a notification's action. Actions the UI handles itself (such as
     /// navigation) are forwarded through uiActionRequested.
     Q_INVOKABLE void runAction(const QString& action);
+    /// Runs the virtual microphone check on the selected output.
+    Q_INVOKABLE void testVirtualMicrophone();
 
 signals:
     void uiActionRequested(const QString& action);

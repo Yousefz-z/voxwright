@@ -20,7 +20,7 @@ ColumnLayout {
             enabled: root.check.state !== VirtualMicCheck.Running
             text: root.check.state === VirtualMicCheck.Running ? qsTr("Listening...") : qsTr("Test the virtual microphone")
             iconName: "cable"
-            onClicked: root.check.start(root.app.audio.chatAppMicrophoneName)
+            onClicked: root.app.testVirtualMicrophone()
         }
         PageButton {
             visible: !root.app.audio.virtualCableFound

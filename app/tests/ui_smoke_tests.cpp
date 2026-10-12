@@ -373,6 +373,37 @@ TEST_CASE("Without notifications the page gets all the height above the bottom b
     CHECK(collector.warnings().isEmpty());
 }
 
+TEST_CASE("The Audio page says when the virtual microphone output is not a cable", "[app][ui]") {
+    const WarningCollector collector;
+    TestApp t;
+    t.backend().addDevice(
+        {"speakers", "Speakers (Realtek(R) Audio)", DeviceKind::Playback, false, 48000, 2, false});
+    t.context().audio()->refreshDevices();
+    QQmlApplicationEngine qml;
+    qml.setInitialProperties({{QStringLiteral("app"), QVariant::fromValue(&t.context())}});
+    qml.loadFromModule(QStringLiteral("Voxwright"), QStringLiteral("Main"));
+    REQUIRE(qml.rootObjects().size() == 1);
+    auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().front());
+    REQUIRE(window != nullptr);
+    window->resize(1280, 820);
+    window->show();
+    REQUIRE(QTest::qWaitForWindowExposed(window));
+    click(window, findItem(window, QStringLiteral("navAudio")));
+    auto* advice = findItem(window, QStringLiteral("virtualMicAdvice"));
+    REQUIRE(advice != nullptr);
+    CHECK(advice->property("text").toString().contains(QStringLiteral("\"CABLE Output")));
+
+    // Found on Windows 11: with speakers selected it still said to choose
+    // "Speakers (...)" as the microphone in chat apps, beside a green check.
+    t.context().audio()->setVirtualMicDeviceId(QStringLiteral("speakers"));
+    QCoreApplication::processEvents();
+    const QString text = advice->property("text").toString();
+    CHECK(text.contains(QStringLiteral("cannot record")));
+    CHECK(text.contains(QStringLiteral("\"CABLE Input (VB-Audio Virtual Cable)\"")));
+    CHECK_FALSE(text.contains(QStringLiteral("Speakers")));
+    CHECK(collector.warnings().isEmpty());
+}
+
 TEST_CASE("Sliders follow a drag, not only a click", "[app][ui]") {
     const WarningCollector collector;
     TestApp t;
