@@ -283,9 +283,7 @@ void parseExpect(const Json& root, VoicePreset& preset) {
     preset.expect.maxLatencyMs = expect->value("maxLatencyMs", 60.0F);
 }
 
-} // namespace
-
-Result<VoicePreset> parseVoicePreset(std::string_view json, const EffectRegistry& registry) {
+Result<VoicePreset> parseChecked(std::string_view json, const EffectRegistry& registry) {
     const Json root = Json::parse(json, nullptr, false);
     if (root.is_discarded() || !root.is_object()) {
         return makeError(ErrorCode::PresetParseError,
@@ -324,6 +322,23 @@ Result<VoicePreset> parseVoicePreset(std::string_view json, const EffectRegistry
     }
     parseExpect(root, preset);
     return preset;
+}
+
+} // namespace
+
+Result<VoicePreset> parseVoicePreset(std::string_view json, const EffectRegistry& registry) {
+    // The JSON library throws when a value has the wrong type (value() and
+    // get() on text where a number belongs). Voice files come from users, so
+    // that is an invalid voice, not a crash.
+    try {
+        return parseChecked(json, registry);
+    } catch (const Json::exception& e) {
+        return makeError(ErrorCode::InvalidPreset,
+                         "This voice file has a setting of the wrong kind, such as text where a "
+                         "number belongs. If you edited it by hand, compare it with a voice "
+                         "exported from Voxwright.",
+                         e.what());
+    }
 }
 
 std::string serializeVoicePreset(const VoicePreset& preset) {
