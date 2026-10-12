@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "id": "natural-feminine",
+  "name": "Natural Feminine",
+  "category": "Natural",
+  "description": "A believable female speaking voice from any voice: learns your pitch and moves it into a female range, with a lighter vocal tract and a touch of breath.",
+  "icon": "natural",
+  "color": "#4FB3BF",
+  "tags": [
+    "female",
+    "realistic",
+    "higher"
+  ],
+  "outputGainDb": 4.0,
+  "blocks": [
+    {
+      "effect": "pitch",
+      "params": {
+        "mode": "Register",
+        "targetHz": 210,
+        "formant": 2.5
+      }
+    },
+    {
+      "effect": "whisper",
+      "params": {
+        "mix": 0.12
+      }
+    },
+    {
+      "effect": "eq",
+      "params": {
+        "lowCut": true,
+        "lowCutHz": 120,
+        "lowShelfDb": -2.0,
+        "lowShelfHz": 250,
+        "mid3Db": 1.5,
+        "mid3Hz": 3500,
+        "highShelfDb": 2.0,
+        "highShelfHz": 7000
+      }
+    }
+  ],
+  "macros": [
+    {
+      "id": "height",
+      "name": "Height",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "targetHz",
+          "from": 170,
+          "to": 250,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "lightness",
+      "name": "Lightness",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 0,
+          "param": "formant",
+          "from": 1,
+          "to": 4,
+          "curve": "linear"
+        }
+      ]
+    },
+    {
+      "id": "breath",
+      "name": "Breath",
+      "default": 0.5,
+      "targets": [
+        {
+          "block": 1,
+          "param": "mix",
+          "from": 0,
+          "to": 0.24,
+          "curve": "linear"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "registerHz": 210
+  }
+}

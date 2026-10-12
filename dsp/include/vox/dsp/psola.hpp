@@ -15,6 +15,7 @@ enum class PitchMode {
     Ratio,    ///< Output f0 = input f0 x ratio.
     Fixed,    ///< Output f0 is constant (monotone robot).
     Quantize, ///< Output f0 snaps to the nearest note of a scale (hard tune).
+    Register, ///< The speaker's typical f0 moves to a target; the melody around it stays.
 };
 
 /// Shared analysis half of the pitch-synchronous overlap-add shifter: input
@@ -94,6 +95,10 @@ public:
     void setPitchRatio(float ratio) noexcept;
     void setFormantRatio(float ratio) noexcept;
     void setFixedFrequency(float hz) noexcept { fixedHz_ = hz; }
+    /// Register mode: where the speaker's typical pitch lands, in Hz.
+    void setRegisterTarget(float hz) noexcept { registerHz_ = hz; }
+    /// Register mode: the speaker's typical pitch as learned so far, in Hz.
+    [[nodiscard]] double learnedRegisterHz() const noexcept;
     /// Scale as a 12-bit mask of allowed pitch classes relative to `key`
     /// (bit 0 = key). `retuneMs` 0 snaps instantly.
     void setScale(int key, std::uint16_t mask, float retuneMs) noexcept;
@@ -134,6 +139,10 @@ private:
     std::uint16_t scaleMask_ = 0x0FFF;
     float retuneMs_ = 0.0F;
     double currentNote_ = -1.0;
+    float registerHz_ = 210.0F;
+    double registerLog2_ = -1.0; ///< log2 of the learned typical pitch; < 0 until voiced input
+    double registerSeconds_ = 0.0;
+    double lastRatio_ = 1.0;
 };
 
 /// Formant-preserving pitch shifter with independent formant control and a
@@ -154,6 +163,7 @@ public:
     void setFormantSemitones(float semitones) noexcept;
     void setPitchMode(PitchMode mode) noexcept { voice_.setPitchMode(mode); }
     void setFixedFrequency(float hz) noexcept { voice_.setFixedFrequency(hz); }
+    void setRegisterTarget(float hz) noexcept { voice_.setRegisterTarget(hz); }
     void setScale(int key, std::uint16_t mask, float retuneMs) noexcept {
         voice_.setScale(key, mask, retuneMs);
     }

@@ -1,6 +1,7 @@
 #include "app_test_support.hpp"
 
 #include <vox/plugins/registry.hpp>
+#include <vox/plugins/voice_library.hpp>
 #include <vox/testing/analysis.hpp>
 #include <vox/testing/signals.hpp>
 
@@ -22,6 +23,15 @@ using namespace vox::app::test;
 using Catch::Approx;
 
 namespace {
+
+/// Built-in voices, so these tests do not change with each new voice.
+int builtinVoiceCount() {
+    static const int kCount = [] {
+        auto voices = vox::plugins::loadBuiltinVoices(vox::plugins::EffectRegistry::builtin());
+        return voices ? static_cast<int>(voices.value().size()) : -1;
+    }();
+    return kCount;
+}
 
 int paramIndex(const char* effect, const char* id) {
     const auto* d = vox::plugins::EffectRegistry::builtin().find(effect);
@@ -125,7 +135,7 @@ TEST_CASE("Saved voices join the voice list and come back after a restart", "[ap
         CHECK(ctx.voices()->currentName() == QStringLiteral("Tin Robot"));
         CHECK(ctx.voices()->macros().size() == 1);
         REQUIRE(designer->customVoices().size() == 1);
-        CHECK(ctx.voices()->voiceCount() == 55);
+        CHECK(ctx.voices()->voiceCount() == builtinVoiceCount() + 1);
 
         QFile saved(t.dataDir() + QStringLiteral("/voices/") + id + QStringLiteral(".json"));
         REQUIRE(saved.open(QIODevice::ReadOnly));
@@ -187,7 +197,7 @@ TEST_CASE("Choosing another voice while designing pauses the preview", "[app][de
     designer->discard();
     CHECK_FALSE(designer->editing());
     CHECK(ctx.voices()->currentVoiceId() == QStringLiteral("cathedral"));
-    CHECK(ctx.voices()->voiceCount() == 54);
+    CHECK(ctx.voices()->voiceCount() == builtinVoiceCount());
 }
 
 TEST_CASE("Saving needs a name and an effect", "[app][designer][errors]") {

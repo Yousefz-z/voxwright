@@ -484,3 +484,31 @@ phase between the two callbacks varied and no processing, the old
 controller dropped out 11 to 14 times a minute at 6 of 14 phases, the new
 one at none of those 6. Latency rises by 2 ms only on a machine that has
 dropped out, and the readout shows it.
+
+## D46. A realistic female voice by register, built from public behavior
+
+*2026-10-12.* The owner asked for a realistic female voice like the
+"Feminine" preset of a game's built-in voice changer. Public coverage
+names the preset and nothing more; the game's files were not opened, as
+D1 requires for any product, so nothing of its filters, parameters, or
+models was used. The voice is built from published voice science
+instead: women speak around 200 to 220 Hz against 100 to 130 Hz for
+men, and their formants sit about 15 % higher from a shorter vocal tract.
+
+A fixed semitone shift cannot serve both a 95 Hz and a 150 Hz speaker,
+so the pitch block got a Register mode: it learns the speaker's typical
+pitch (a log-domain average of voiced input, fast for the first 1.5 s
+of voice, then over about 3 s) and moves it to a target, keeping the
+melody around it. Measured on synthetic phrases from 95, 120, and
+150 Hz speakers: 201, 203, and 201 Hz out for a 210 Hz target, with the
+melody's range kept (4.1 to 4.3 semitones; at least 70 % of the input's
+is required). "Natural Feminine" adds a 2.5 semitone formant raise
+(15.5 %), 12 % breath from the whisper block, and an EQ that cuts below
+120 Hz and lifts presence and air; sliders for target pitch, formant,
+and breath. Formants rise much less than the pitch, which keeps it from
+sounding like a child or a cartoon.
+
+Neural conversion (RVC and similar) sounds more convincing but needs a
+model trained on a target voice, usually a real person's, and 100 to
+300 ms of delay on a CPU. The ML track (D13, D35) runs a model the user
+supplies; none ships.

@@ -279,6 +279,9 @@ void parseExpect(const Json& root, VoicePreset& preset) {
     if (expect->contains("fixedPitchHz")) {
         preset.expect.fixedPitchHz = (*expect)["fixedPitchHz"].get<float>();
     }
+    if (expect->contains("registerHz")) {
+        preset.expect.registerHz = (*expect)["registerHz"].get<float>();
+    }
     preset.expect.unpitched = expect->value("unpitched", false);
     preset.expect.maxLatencyMs = expect->value("maxLatencyMs", 60.0F);
 }

@@ -20,6 +20,13 @@ constexpr double kMinCorrelation = 0.3;
 constexpr double kSearchRadius = 0.15;    // of a period, either side of the prediction
 constexpr double kCorrelationHalf = 0.25; // half-length of the compared segments
 constexpr double kUnvoicedSeconds = 0.005;
+// Register mode starts from a typical adult male pitch and learns the
+// speaker's own: quickly for the first 1.5 s of voice, then over about 3 s,
+// slow enough that the melody of a sentence survives.
+constexpr double kRegisterPriorHz = 120.0;
+constexpr double kRegisterLearnSeconds = 1.5;
+constexpr double kRegisterFastSeconds = 0.4;
+constexpr double kRegisterSlowSeconds = 3.0;
 
 } // namespace
 
@@ -203,6 +210,13 @@ void PsolaVoice::reset() noexcept {
     emitted_ = -latency_; // the first emitted block starts one latency before input 0
     lateSamples_ = 0;
     currentNote_ = -1.0;
+    registerLog2_ = -1.0;
+    registerSeconds_ = 0.0;
+    lastRatio_ = 1.0;
+}
+
+double PsolaVoice::learnedRegisterHz() const noexcept {
+    return registerLog2_ < 0.0 ? kRegisterPriorHz : std::exp2(registerLog2_);
 }
 
 void PsolaVoice::setPitchRatio(float ratio) noexcept {
@@ -257,8 +271,25 @@ double PsolaVoice::targetRatio(double inputPeriod, double spacingHint) noexcept 
             440.0 * std::exp2((currentNote_ - 69.0) / 12.0) * static_cast<double>(pitchRatio_);
         break;
     }
+    case PitchMode::Register: {
+        // A log-domain average of the voiced input, advanced by the output
+        // time each grain covers (several grains can share an input mark).
+        if (registerLog2_ < 0.0) {
+            registerLog2_ = std::log2(kRegisterPriorHz);
+        }
+        const double step = spacingHint / (lastRatio_ * sampleRate_);
+        const double tau =
+            registerSeconds_ < kRegisterLearnSeconds ? kRegisterFastSeconds : kRegisterSlowSeconds;
+        registerLog2_ += (1.0 - std::exp(-step / tau)) * (std::log2(inputHz) - registerLog2_);
+        registerSeconds_ += step;
+        targetHz = inputHz *
+                   std::exp2(std::log2(static_cast<double>(registerHz_)) - registerLog2_) *
+                   static_cast<double>(pitchRatio_);
+        break;
     }
-    return std::clamp(targetHz / inputHz, 0.25, 4.0);
+    }
+    lastRatio_ = std::clamp(targetHz / inputHz, 0.25, 4.0);
+    return lastRatio_;
 }
 
 void PsolaVoice::addGrain(const PsolaAnalyzer& analyzer, const PsolaAnalyzer::Mark& mark,

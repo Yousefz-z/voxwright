@@ -44,7 +44,7 @@ through Catch2 without a UI or audio device.
 |---|---|---|
 | `core/` | `Result<T>`, typed `Error` with actionable messages, SPSC queue, SPSC ring buffer, object channel (hands heap objects to the audio thread and back) | none |
 | `dsp/` | Biquad/SVF filters, delay lines, LFOs, envelope followers, pitch tracker, PSOLA pitch shifter, spectral shifter, vocoder, FDN reverb, dynamics, distortion, modulation effects, ambience synthesis, loudness meter, feedback detector, RNNoise wrapper, streaming and one-shot resamplers | Signalsmith Stretch (MIT), RNNoise (BSD-3), libsamplerate (BSD-2) |
-| `plugins/` | Effect descriptors (parameter metadata), factory registry, node wrappers, preset and macro model, JSON preset parser, 54 voice presets | nlohmann/json (MIT) |
+| `plugins/` | Effect descriptors (parameter metadata), factory registry, node wrappers, preset and macro model, JSON preset parser, 55 voice presets | nlohmann/json (MIT) |
 | `engine/` | Processing graph, voice chain hot swap, transmit control (mute, push-to-talk, push-to-mute, censor), soundboard player, speech player, mixer buses, output limiters, per-output drift compensation, device loss and recovery, latency breakdown, metering, command and event queues | none |
 | `devices/` | `AudioBackend` interface, miniaudio backend with per-failure error mapping, fake backend (simulated time, injected failures and disconnects), audio file decoding, virtual cable detection | miniaudio (MIT-0) |
 | `app/` | QML UI, view models, global hotkeys, tray, autostart, settings store, text to speech, setup guide with the virtual microphone check | Qt 6.8 (LGPL-3) |

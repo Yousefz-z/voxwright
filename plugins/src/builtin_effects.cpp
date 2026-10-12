@@ -176,15 +176,16 @@ void registerPitch(EffectRegistry& r) {
         "Pitch & Formant",
         "Pitch",
         "Formant-preserving pitch shift (PSOLA) with independent formant control, "
-        "monotone robot and scale-snapping modes.",
+        "monotone robot, scale-snapping, and register modes.",
         {number("semitones", "Pitch", "st", -24.0F, 24.0F, 0.0F),
          number("formant", "Formant", "st", -12.0F, 12.0F, 0.0F),
-         choice("mode", "Mode", {"Shift", "Robot", "Tune"}, 0.0F),
+         choice("mode", "Mode", {"Shift", "Robot", "Tune", "Register"}, 0.0F),
          number("robotHz", "Robot pitch", "Hz", 40.0F, 500.0F, 110.0F, kLog),
          choice("key", "Key", {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"},
                 0.0F),
          choice("scale", "Scale", {"Chromatic", "Major", "Minor", "Pentatonic", "Blues"}, 1.0F),
-         number("retune", "Retune speed", "ms", 0.0F, 400.0F, 0.0F)}};
+         number("retune", "Retune speed", "ms", 0.0F, 400.0F, 0.0F),
+         number("targetHz", "Target pitch", "Hz", 80.0F, 400.0F, 210.0F, kLog)}};
     addEffect<dsp::PsolaShifter>(
         r, std::move(d),
         {[](dsp::PsolaShifter& e, const PrepareContext& c) {
@@ -200,13 +201,17 @@ void registerPitch(EffectRegistry& r) {
                  e.setFormantSemitones(v[1]);
                  break;
              case 2: {
-                 constexpr std::array<dsp::PitchMode, 3> kModes{
-                     dsp::PitchMode::Ratio, dsp::PitchMode::Fixed, dsp::PitchMode::Quantize};
-                 e.setPitchMode(kModes[std::min<std::size_t>(index(v[2]), 2)]);
+                 constexpr std::array<dsp::PitchMode, 4> kModes{
+                     dsp::PitchMode::Ratio, dsp::PitchMode::Fixed, dsp::PitchMode::Quantize,
+                     dsp::PitchMode::Register};
+                 e.setPitchMode(kModes[std::min<std::size_t>(index(v[2]), 3)]);
                  break;
              }
              case 3:
                  e.setFixedFrequency(v[3]);
+                 break;
+             case 7:
+                 e.setRegisterTarget(v[7]);
                  break;
              default:
                  e.setScale(static_cast<int>(index(v[4])),

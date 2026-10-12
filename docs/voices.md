@@ -1,6 +1,6 @@
 # Voices
 
-Voxwright ships 54 original voices. Each is a JSON file in [`plugins/voices/`](../plugins/voices) that chains effect blocks from the registry and exposes one to three quick sliders (macros). Every voice also gets Bass and Treble sliders from the finishing tone stage.
+Voxwright ships 55 original voices. Each is a JSON file in [`plugins/voices/`](../plugins/voices) that chains effect blocks from the registry and exposes one to three quick sliders (macros). Every voice also gets Bass and Treble sliders from the finishing tone stage.
 
 ## Catalogue
 
@@ -12,6 +12,7 @@ Voxwright ships 54 original voices. Each is a JSON file in [`plugins/voices/`](.
 | Deep Baritone | A lower, fuller version of your own voice. | pitch + eq | Depth, Body |
 | Little Sprout | A small child: high pitch and a short vocal tract. | pitch + eq | Age |
 | Low Tenor | Slightly deeper and calmer; subtle enough for meetings. | pitch | Depth |
+| Natural Feminine | A believable female speaking voice from any voice: learns your pitch and moves it into a female range, with a lighter vocal tract and a touch of breath. | pitch (register) + whisper + eq | Height, Lightness, Breath |
 | Old Timer | Shaky, breathy, and a little hoarse. | pitch + vibrato + whisper + eq | Tremble, Breath |
 | Soprano Lift | A high, airy voice with raised formants. | pitch + eq | Height, Lightness |
 
@@ -182,6 +183,7 @@ development container.
 | Masked Villain | Character | -7.09 | 78.5 | 64 % | 0.510 | 0.70 | +0.0 | -60 | 0 | 30.2 | 0.0410 | -0.0 |
 | Megaphone | Device | -0.25 | 116.5 | 52 % | 0.398 | 2.38 | -0.0 | -60 | 659 | 0.0 | 0.0224 | +1.4 |
 | Mountain Giant | Character | -11.98 | 59.2 | 61 % | 0.612 | 0.59 | -0.0 | -18 | 173 | 30.2 | 0.0258 | -0.9 |
+| Natural Feminine | Natural | +9.43 | 203.8 | 63 % | 0.165 | 1.43 | -0.1 | -240 | 0 | 30.2 | 0.0140* | +4.1 |
 | Nebula Entity | Space | +0.85 | 124.1 | 11 % | 0.560 | 0.94 | -0.0 | -6 | 315 | 30.2 | 0.0389 | -1.8 |
 | Octave Doubler | Musical | -11.53 | 60.7 | 63 % | 0.615 | 0.97 | +0.0 | -240 | 0 | 30.2 | 0.0237 | -2.1 |
 | Old Computer | Machine | +10.76 | 220.0 | 93 % | 0.004 | 0.68 | -0.0 | -47 | 981 | 0.0 | 0.0264 | -5.8 |
@@ -204,6 +206,10 @@ development container.
 | Void Whisper | Space | +0.00 | 0.0 | 0 % | 0.886 | 0.83 | -0.0 | -6 | 282 | 30.2 | 0.0481 | +0.3 |
 | Walkie-Talkie | Device | +0.66 | 122.7 | 68 % | 0.277 | 1.64 | +0.0 | -44 | 1830 | 0.0 | 0.0194 | +4.7 |
 
+\* Measured on a Windows 11 PC, not in the container (Bright Alto measures
+0.0070 there against 0.0195 above). On that PC Natural Feminine is not among
+the five closest pairs.
+
 Closest pairs (feature distance):
 
 | Distance | Voices |
@@ -217,6 +223,7 @@ Closest pairs (feature distance):
 ## Spectrograms
 
 Input first, then every voice in alphabetical order (0 to 8 kHz, 80 dB range).
+The image predates Natural Feminine; the commands below add it.
 
 ![Spectrograms of every voice](images/voice-spectrograms.png)
 

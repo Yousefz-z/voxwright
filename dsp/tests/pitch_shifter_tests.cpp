@@ -8,6 +8,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <span>
 #include <vector>
@@ -197,6 +198,46 @@ TEST_CASE("PSOLA quantize mode snaps to the scale", "[dsp][psola][tune]") {
     }
     REQUIRE(voiced > 50);
     CHECK(static_cast<double>(onScale) / static_cast<double>(voiced) > 0.9);
+}
+
+TEST_CASE("PSOLA register mode moves any speaker to the target and keeps the melody",
+          "[dsp][psola][register]") {
+    // The same phrase from a deep, a medium, and a light speaking voice,
+    // twice in a row; measured over the second time, once the register is
+    // learned.
+    const auto spreadSemitones = [](const std::vector<double>& track) {
+        std::vector<double> st;
+        for (const double f : track) {
+            if (f > 0.0) {
+                st.push_back(12.0 * std::log2(f));
+            }
+        }
+        std::sort(st.begin(), st.end());
+        return st.empty() ? 0.0 : st[st.size() * 9 / 10] - st[st.size() / 10];
+    };
+    for (const double base : {95.0, 120.0, 150.0}) {
+        auto shifter = makePsola();
+        shifter.setPitchMode(vox::dsp::PitchMode::Register);
+        shifter.setRegisterTarget(210.0F);
+        const auto phrase = vox::testing::synthPhrase(base, kFs);
+        std::vector<float> in = phrase.audio;
+        in.insert(in.end(), phrase.audio.begin(), phrase.audio.end());
+        const auto out = run(shifter, in);
+        const std::size_t length = phrase.audio.size();
+        const auto second =
+            std::span<const float>(out).subspan(shifter.latencySamples() + length, length - 4800);
+        const auto outTrack = vox::testing::f0Track(second, kFs, 60.0, 600.0);
+        const auto inTrack = vox::testing::f0Track(phrase.audio, kFs, 60.0, 600.0);
+        const double median = vox::testing::medianVoiced(outTrack);
+        const double spreadIn = spreadSemitones(inTrack);
+        const double spreadOut = spreadSemitones(outTrack);
+        INFO(base << " Hz speaker: median " << median << " Hz (input "
+                  << vox::testing::medianVoiced(inTrack) << " Hz), melody spread " << spreadOut
+                  << " st (input " << spreadIn << " st), learned "
+                  << shifter.voice().learnedRegisterHz() << " Hz");
+        CHECK(std::abs(vox::testing::centsBetween(median, 210.0)) < 150.0);
+        CHECK(spreadOut > 0.7 * spreadIn);
+    }
 }
 
 TEST_CASE("PSOLA stays finite and silent-in silent-out on edge cases", "[dsp][psola]") {
