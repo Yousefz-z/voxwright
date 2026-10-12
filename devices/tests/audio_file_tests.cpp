@@ -136,6 +136,29 @@ TEST_CASE("Each decode failure has its own error", "[devices][file][errors]") {
     }
 }
 
+TEST_CASE("Names outside the system code page decode, and errors show them", "[devices][file]") {
+    // Cyrillic and Arabic: on an English Windows neither fits the ANSI code
+    // page, where narrow paths and path::string() go through.
+    const std::filesystem::path folder =
+        std::filesystem::temp_directory_path() /
+        (u8"vox_devices_звук_صوت_" + std::u8string(reinterpret_cast<const char8_t*>(
+                                         std::to_string(std::random_device{}()).c_str())));
+    std::filesystem::create_directories(folder);
+    const std::filesystem::path file = folder / u8"звук.wav";
+    REQUIRE(vox::testing::writeWav(file, vox::testing::sine(440.0, 1.0), 48000));
+
+    const auto clip = vox::devices::decodeAudioFile(file, 48000.0);
+    CHECK(clip);
+    vox::devices::DecodeLimits limits;
+    limits.maxSeconds = 0.5;
+    const auto tooLong = vox::devices::decodeAudioFile(file, 48000.0, limits);
+    REQUIRE_FALSE(tooLong);
+    const std::u8string name = u8"звук.wav";
+    CHECK(tooLong.error().message.find(std::string(name.begin(), name.end())) != std::string::npos);
+    std::error_code ec;
+    std::filesystem::remove_all(folder, ec);
+}
+
 TEST_CASE("Supported extensions cover the soundboard formats", "[devices][file]") {
     const auto& ext = vox::devices::supportedAudioExtensions();
     for (const char* e : {".wav", ".mp3", ".flac", ".ogg"}) {

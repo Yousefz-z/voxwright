@@ -107,6 +107,25 @@ TEST_CASE("Imported files are copied, decoded, and playable", "[app][soundboard]
     CHECK(QDir(t.dataDir() + QStringLiteral("/sounds")).entryList(QDir::Files).isEmpty());
 }
 
+TEST_CASE("Sounds in folders with non-ASCII names load", "[app][soundboard]") {
+    // A Windows user name such as "José" puts every imported sound there.
+    TestApp t;
+    auto* board = t.context().soundboard();
+    REQUIRE(t.waitForSounds());
+    const QTemporaryDir root;
+    const QString folder = root.filePath(QStringLiteral("José звук"));
+    REQUIRE(QDir().mkpath(folder));
+    const QString wav = folder + QStringLiteral("/صوت.wav");
+    REQUIRE(vox::testing::writeWav(std::filesystem::path(wav.toStdU16String()),
+                                   vox::testing::sine(440.0, 0.5, 48000.0, 0.5F), 48000));
+    board->addBoard(QStringLiteral("Mine"));
+    board->importFiles({QUrl::fromLocalFile(wav)});
+    REQUIRE(t.waitForSounds());
+    const quint32 slot = slotNamed(*board, QStringLiteral("صوت"));
+    REQUIRE(slot != 0);
+    CHECK(stateOf(*board, slot) == static_cast<int>(SoundListModel::LoadState::Ready));
+}
+
 TEST_CASE("Import problems are reported per file", "[app][soundboard][errors]") {
     TestApp t;
     auto* board = t.context().soundboard();

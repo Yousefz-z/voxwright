@@ -11,6 +11,14 @@
 namespace vox::devices {
 namespace {
 
+/// UTF-8, like every message. path::string() would use the Windows ANSI code
+/// page and throw for a name it cannot hold (an Arabic name on English
+/// Windows, for example).
+std::string utf8(const std::filesystem::path& path) {
+    const std::u8string text = path.u8string();
+    return {text.begin(), text.end()};
+}
+
 std::string megabytes(std::uintmax_t bytes) {
     return std::to_string((bytes + 512ULL * 1024ULL) / (1024ULL * 1024ULL)) + " MB";
 }
@@ -89,11 +97,11 @@ const std::vector<std::string>& supportedAudioExtensions() {
 
 Result<DecodedClip> decodeAudioFile(const std::filesystem::path& path, double targetRate,
                                     const DecodeLimits& limits) {
-    const std::string label = path.filename().string();
+    const std::string label = utf8(path.filename());
     std::error_code ec;
     if (!std::filesystem::exists(path, ec)) {
         return makeError(ErrorCode::FileNotFound,
-                         "\"" + path.string() +
+                         "\"" + utf8(path) +
                              "\" was not found. It may have been moved or deleted; import it "
                              "again from its new location.");
     }

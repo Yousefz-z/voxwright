@@ -24,7 +24,7 @@ struct ModelInfo {
 /// [1, M] at outputRate covering the same stretch of time.
 class NeuralModel {
 public:
-    /// Loads and checks a model. `threads` is how many CPU threads one run
+    /// Loads and checks a model from a UTF-8 path. `threads` is how many CPU threads one run
     /// may use. Each failure (missing file, not ONNX, wrong inputs or
     /// outputs, bad metadata) has its own message.
     [[nodiscard]] static Result<std::unique_ptr<NeuralModel>> load(const std::string& path,

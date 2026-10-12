@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 #include <map>
 #include <mutex>
 #include <optional>
@@ -65,7 +66,10 @@ Loaded loadSource(const QString& source) {
         }
         return out;
     }
-    auto decoded = devices::decodeAudioFile(source.toStdString(), engine::kEngineRate);
+    // From UTF-16: a narrow path is read in the ANSI code page on Windows, so
+    // a folder such as C:/Users/José would not be found.
+    auto decoded = devices::decodeAudioFile(std::filesystem::path(source.toStdU16String()),
+                                            engine::kEngineRate);
     if (decoded) {
         out.samples = std::move(decoded).value().samples;
     } else {
