@@ -356,7 +356,7 @@ TEST_CASE("The virtual microphone alone can run exclusively, and falls back to s
           "[engine][devices]") {
     Rig rig;
     rig.engine.setDeviceOptions(128, false, true);
-    const auto exclusive = [&rig](const auto& info) {
+    const auto exclusive = [](const auto& info) {
         return info.value_or(vox::devices::StreamInfo{}).exclusive;
     };
 
