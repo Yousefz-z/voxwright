@@ -17,7 +17,7 @@ namespace {
 VirtualMicCheck::State runCheck(TestApp& t, const std::vector<float>& micInput = {}) {
     auto* check = t.context().micCheck();
     check->setListenMs(300);
-    check->start(t.context().audio()->chatAppMicrophoneName());
+    t.context().testVirtualMicrophone();
     if (check->state() != VirtualMicCheck::State::Running) {
         return check->state();
     }
@@ -87,5 +87,30 @@ TEST_CASE("The virtual microphone check says what went wrong", "[app][miccheck][
         TestApp t({.cable = true});
         CHECK(runCheck(t) == VirtualMicCheck::State::Failed);
         CHECK(t.context().micCheck()->message().contains(QStringLiteral("not in the list")));
+    }
+    SECTION("The output is not a cable") {
+        // Found on Windows 11: the check then said to restart the computer.
+        TestApp t({.cable = true, .cableLoopback = true});
+        t.backend().addDevice({"speakers", "Speakers (Realtek(R) Audio)", DeviceKind::Playback,
+                               false, 48000, 2, false});
+        auto* audio = t.context().audio();
+        audio->refreshDevices();
+        audio->setVirtualMicDeviceId(QStringLiteral("speakers"));
+        CHECK_FALSE(audio->virtualMicIsCable());
+        CHECK(audio->suggestedCableName() ==
+              QStringLiteral("CABLE Input (VB-Audio Virtual Cable)"));
+        CHECK(runCheck(t) == VirtualMicCheck::State::Failed);
+        const QString message = t.context().micCheck()->message();
+        CHECK(message.contains(QStringLiteral("\"Speakers (Realtek(R) Audio)\" is not a virtual "
+                                              "cable")));
+        CHECK(message.contains(QStringLiteral("CABLE Input (VB-Audio Virtual Cable)")));
+        CHECK_FALSE(message.contains(QStringLiteral("Restart")));
+    }
+    SECTION("No output is selected") {
+        TestApp t({.cable = true, .cableLoopback = true});
+        t.context().audio()->setVirtualMicDeviceId(DeviceListModel::noneId());
+        CHECK(runCheck(t) == VirtualMicCheck::State::Failed);
+        CHECK(t.context().micCheck()->message().startsWith(
+            QStringLiteral("No virtual microphone output is selected")));
     }
 }

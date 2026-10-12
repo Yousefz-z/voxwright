@@ -9,6 +9,10 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <array>
+#include <cstdint>
+#include <vector>
+
 using namespace vox::app;
 using namespace vox::app::test;
 
@@ -46,6 +50,37 @@ TEST_CASE("Qt keys map to macOS key codes and Carbon modifiers", "[app][hotkeys]
     CHECK(macModifierFlags(Qt::AltModifier) == 0x0800U);
     CHECK(isModifierKey(Qt::Key_Shift));
     CHECK_FALSE(isModifierKey(Qt::Key_Q));
+}
+
+TEST_CASE("Key events press and release hotkeys, also across new bindings", "[app][hotkeys]") {
+    constexpr std::uint32_t kF9 = 0x78;
+    constexpr std::uint32_t kF10 = 0x79;
+    constexpr int kTalk = 1;
+    constexpr int kMute = 2;
+    KeyMatcher keys;
+    CHECK(keys.setBindings({{kTalk, kF9, true}, {kMute, kF10}}).empty());
+    std::array<KeyMatcher::Event, 8> events{};
+    const KeyMatcher::Modifiers none;
+    const KeyMatcher::Modifiers ctrl{true};
+
+    // Modifiers must match to press; key repeat does not press again.
+    CHECK(keys.onKey(kF9, true, false, none, events) == 0);
+    REQUIRE(keys.onKey(kF9, true, false, ctrl, events) == 1);
+    CHECK(events[0].id == kTalk);
+    CHECK(events[0].pressed);
+    CHECK(keys.onKey(kF9, true, false, ctrl, events) == 0);
+
+    // New bindings while the key is held (a sound deleted, a key assigned):
+    // the release still comes when the key goes up.
+    CHECK(keys.setBindings({{kTalk, kF9, true}, {kMute, kF10}, {3, 0x41}}).empty());
+    REQUIRE(keys.onKey(kF9, false, true, none, events) == 1);
+    CHECK(events[0].id == kTalk);
+    CHECK_FALSE(events[0].pressed);
+
+    // A held hotkey that is unbound or moved is reported as released.
+    REQUIRE(keys.onKey(kF10, true, false, none, events) == 1);
+    CHECK(keys.setBindings({{kTalk, kF9, true}, {kMute, 0x7A}}) == std::vector<int>{kMute});
+    CHECK(keys.onKey(kF10, false, true, none, events) == 0);
 }
 
 TEST_CASE("Hotkeys are validated, checked for conflicts, and saved", "[app][hotkeys]") {

@@ -103,6 +103,27 @@ TEST_CASE("Each kind of preset mistake gets its own error", "[plugins][preset]")
     CHECK(errorOf(badMacro) == ErrorCode::InvalidPreset);
 }
 
+TEST_CASE("Values of the wrong type are errors, not crashes", "[plugins][preset]") {
+    // Each of these threw from inside the JSON library before, out of the
+    // parser and the app: one such file among the saved voices stopped
+    // Voxwright at every start.
+    CHECK(errorOf(R"({"version": "1"})") == ErrorCode::InvalidPreset);
+    CHECK(errorOf(withBlocks(R"([{"effect": "reverb", "bypassed": "yes"}])")) ==
+          ErrorCode::InvalidPreset);
+    const std::string badDefault = R"({"version": 1, "id": "x", "name": "X", "category": "Utility",
+        "blocks": [{"effect": "reverb"}],
+        "macros": [{"id": "m", "name": "M", "default": "half",
+                    "targets": [{"block": 0, "param": "mix", "from": 0, "to": 1}]}]})";
+    CHECK(errorOf(badDefault) == ErrorCode::InvalidPreset);
+    const std::string badCurve = R"({"version": 1, "id": "x", "name": "X", "category": "Utility",
+        "blocks": [{"effect": "reverb"}],
+        "macros": [{"id": "m", "name": "M",
+                    "targets": [{"block": 0, "param": "mix", "from": 0, "to": 1, "curve": 2}]}]})";
+    CHECK(errorOf(badCurve) == ErrorCode::InvalidPreset);
+    CHECK(errorOf(R"({"version": 1, "id": "x", "name": "X", "category": "Utility",
+        "blocks": [], "expect": {"fixedPitchHz": "high"}})") == ErrorCode::InvalidPreset);
+}
+
 TEST_CASE("Error messages name the exact field", "[plugins][preset]") {
     const auto r = parseVoicePreset(
         withBlocks(R"([{"effect": "reverb"}, {"effect": "echo", "params": {"time": 99999}}])"),

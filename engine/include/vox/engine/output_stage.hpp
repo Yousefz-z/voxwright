@@ -32,7 +32,10 @@ namespace vox::engine {
 /// At start and after an underrun the stage outputs silence until it holds
 /// the target plus one device period plus the producer's last burst, so the
 /// first reads cannot run dry before the next producer callback; then the
-/// controller settles the fill. This beats crackling.
+/// controller settles the fill. This beats crackling. Each underrun also
+/// raises the target by its starting value (up to ten times it): a machine
+/// whose scheduling jitter exceeds the margin then stops dropping out after
+/// a refill or two instead of every few seconds (D45).
 class OutputStage {
 public:
     /// `targetFrames` is the continuous-model fill the controller holds
@@ -45,8 +48,9 @@ public:
     /// needs no refill margin.
     void setSynchronous(bool synchronous) noexcept { synchronous_ = synchronous; }
 
-    /// Producer side. `now` is monotonic time in seconds; every push made in
-    /// one producer callback passes the same value.
+    /// Producer side. `now` is monotonic time in seconds when this audio
+    /// lands, after any processing in the callback; every push made in one
+    /// producer callback passes the same value.
     void push(std::span<const float> engineAudio, double now) noexcept;
 
     /// Consumer side: fills `frames` frames of `channels`-channel interleaved
@@ -62,7 +66,10 @@ public:
     /// Current ratio trim (producer thread only).
     [[nodiscard]] double ratioTrim() const noexcept { return trim_; }
     [[nodiscard]] std::size_t fill() const noexcept { return ring_ ? ring_->availableToRead() : 0; }
-    [[nodiscard]] std::size_t targetFrames() const noexcept { return target_; }
+    /// The current target, raised by underruns (any thread).
+    [[nodiscard]] std::size_t targetFrames() const noexcept {
+        return target_.load(std::memory_order_relaxed);
+    }
     /// Frames the resampler holds back between calls (measured at prepare).
     [[nodiscard]] std::size_t resamplerDelayFrames() const noexcept { return resamplerDelay_; }
     [[nodiscard]] double deviceRate() const noexcept { return deviceRate_; }
@@ -73,7 +80,8 @@ private:
     double engineRate_ = 48000.0;
     double deviceRate_ = 48000.0;
     double nominalRatio_ = 1.0;
-    std::size_t target_ = 256;
+    std::size_t baseTarget_ = 256;
+    std::size_t maxTarget_ = 2560;
     bool synchronous_ = false;
     std::size_t resamplerDelay_ = 0;
     dsp::StreamResampler resampler_;
@@ -93,6 +101,7 @@ private:
     std::atomic<double> lastPullTime_{-1.0};
     std::atomic<std::size_t> lastBurst_{0};
     std::atomic<bool> refilling_{true};
+    std::atomic<std::size_t> target_{256};
     std::atomic<std::uint64_t> refills_{0};
     std::atomic<std::uint64_t> underruns_{0};
     std::atomic<std::uint64_t> overruns_{0};

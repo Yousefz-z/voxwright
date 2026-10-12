@@ -352,6 +352,59 @@ TEST_CASE("Device list changes are reported, running or not", "[engine][devices]
     CHECK(rig.engine.isRunning());
 }
 
+TEST_CASE("The virtual microphone alone can run exclusively, and falls back to shared",
+          "[engine][devices]") {
+    Rig rig;
+    rig.engine.setDeviceOptions(128, false, true);
+    const auto exclusive = [](const auto& info) {
+        return info.value_or(vox::devices::StreamInfo{}).exclusive;
+    };
+
+    SECTION("Exclusive when the cable allows it, the other devices shared") {
+        REQUIRE(rig.engine.start(rig.selection));
+        const auto active = rig.engine.activeDevices();
+        CHECK(exclusive(active.virtualMic));
+        CHECK_FALSE(exclusive(active.input));
+        CHECK_FALSE(exclusive(active.monitor));
+        CHECK(active.virtualMicSharedReason.empty());
+    }
+    SECTION("Shared, with the reason, while the cable refuses exclusive use") {
+        rig.backend.refuseExclusive(
+            "cable", vox::makeError(vox::ErrorCode::DeviceInUseExclusive,
+                                    "\"CABLE Input\" cannot be opened in exclusive mode."));
+        REQUIRE(rig.engine.start(rig.selection));
+        auto active = rig.engine.activeDevices();
+        CHECK_FALSE(exclusive(active.virtualMic));
+        CHECK(active.virtualMicSharedReason.find("exclusive mode") != std::string::npos);
+        // The voice still reaches the cable.
+        const auto out = rig.pump(vox::testing::sine(440.0, 0.5, 48000.0, 0.3F));
+        REQUIRE(out.mic.size() > 4800);
+        CHECK(vox::testing::rms(std::span<const float>(out.mic).last(4800)) > 0.05);
+
+        // Once the cable allows it again, the next start is exclusive.
+        rig.backend.allowExclusive("cable");
+        REQUIRE(rig.engine.start(rig.selection));
+        active = rig.engine.activeDevices();
+        CHECK(exclusive(active.virtualMic));
+        CHECK(active.virtualMicSharedReason.empty());
+    }
+    SECTION("A missing cable is an error, not a reason to retry") {
+        rig.selection.virtualMicId = "unplugged";
+        const auto r = rig.engine.start(rig.selection);
+        REQUIRE_FALSE(r);
+        CHECK(r.error().code == vox::ErrorCode::DeviceNotFound);
+    }
+    SECTION("With every device exclusive, a refusal stops the start") {
+        rig.engine.setDeviceOptions(128, true, true);
+        rig.backend.refuseExclusive("cable", vox::makeError(vox::ErrorCode::DeviceInUseExclusive,
+                                                            "cannot be opened in exclusive mode."));
+        const auto r = rig.engine.start(rig.selection);
+        REQUIRE_FALSE(r);
+        CHECK(r.error().message.rfind("Virtual microphone output: ", 0) == 0);
+        CHECK_FALSE(rig.backend.isRunning("mic"));
+    }
+}
+
 TEST_CASE("Buffer size and exclusive mode apply from the next start", "[engine][devices]") {
     Rig rig;
     rig.engine.setDeviceOptions(256, true);

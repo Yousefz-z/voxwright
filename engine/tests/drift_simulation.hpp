@@ -24,6 +24,18 @@ struct DriftResult {
                                         std::size_t producerBlock = 128,
                                         std::size_t deviceBlock = 128, double jitterMs = 1.5);
 
+struct ProcessingSetup {
+    double processingMs = 0.0;   ///< The write lands this long after its callback starts.
+    double deviceOffsetMs = 0.0; ///< Device reads start this much later than producer callbacks.
+    bool stampAtLanding = false; ///< push() gets the landing time, not the callback start.
+};
+
+/// simulateDrift() where the producer needs `processingMs` before its write
+/// lands, as when the graph runs a voice inside the capture callback.
+[[nodiscard]] DriftResult simulateDrift(double deviceRate, double ppm, double seconds,
+                                        std::size_t producerBlock, std::size_t deviceBlock,
+                                        double jitterMs, const ProcessingSetup& processing);
+
 /// Ratio (dB) of a sine's energy to everything else (noise, distortion,
 /// images) over the last second, from a Blackman-Harris spectrum with 1 Hz
 /// bins. Slow frequency wander from the ratio trim stays inside the

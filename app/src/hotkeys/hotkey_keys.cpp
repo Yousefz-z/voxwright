@@ -151,4 +151,46 @@ std::uint32_t macModifierFlags(Qt::KeyboardModifiers modifiers) {
     return flags;
 }
 
+std::vector<int> KeyMatcher::setBindings(const std::vector<Binding>& bindings) {
+    std::vector<State> next;
+    next.reserve(bindings.size());
+    for (const Binding& b : bindings) {
+        const auto held = std::find_if(states_.begin(), states_.end(), [&b](const State& s) {
+            return s.down && s.binding.id == b.id && s.binding.key == b.key;
+        });
+        next.push_back({b, held != states_.end()});
+        if (held != states_.end()) {
+            held->down = false; // carried over, not released
+        }
+    }
+    std::vector<int> released;
+    for (const State& s : states_) {
+        if (s.down) {
+            released.push_back(s.binding.id);
+        }
+    }
+    states_ = std::move(next);
+    return released;
+}
+
+std::size_t KeyMatcher::onKey(std::uint32_t key, bool down, bool up, Modifiers held,
+                              std::span<Event> out) {
+    std::size_t count = 0;
+    for (State& s : states_) {
+        if (s.binding.key != key || count == out.size()) {
+            continue;
+        }
+        const Binding& b = s.binding;
+        if (down && !s.down && b.ctrl == held.ctrl && b.shift == held.shift && b.alt == held.alt &&
+            b.win == held.win) {
+            s.down = true;
+            out[count++] = {b.id, true};
+        } else if (up && s.down) {
+            s.down = false;
+            out[count++] = {b.id, false};
+        }
+    }
+    return count;
+}
+
 } // namespace vox::app

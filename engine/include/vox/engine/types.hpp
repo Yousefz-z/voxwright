@@ -51,7 +51,11 @@ struct DeviceSelection {
 
 struct EngineConfig {
     std::uint32_t periodFrames = 128; ///< Requested device buffer size.
-    bool exclusive = false;
+    bool exclusive = false;           ///< Every device in WASAPI exclusive mode.
+    /// Only the virtual microphone output in exclusive mode, so screen
+    /// sharing cannot capture it (D44). Falls back to shared mode when the
+    /// device refuses exclusive use.
+    bool virtualMicExclusive = false;
     float minVoiceHz = 75.0F;     ///< Sets PSOLA latency (two periods).
     std::uint32_t maxBlock = 512; ///< Largest internal processing block.
 };

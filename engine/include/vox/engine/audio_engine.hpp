@@ -46,10 +46,13 @@ public:
     [[nodiscard]] Status start(const DeviceSelection& selection);
     void stop() noexcept;
     [[nodiscard]] bool isRunning() const noexcept { return running_; }
-    /// Device buffer size and WASAPI exclusive mode, used from the next start().
-    void setDeviceOptions(std::uint32_t periodFrames, bool exclusive) noexcept {
+    /// Device buffer size and WASAPI exclusive mode (for every device, or
+    /// for the virtual microphone only), used from the next start().
+    void setDeviceOptions(std::uint32_t periodFrames, bool exclusive,
+                          bool virtualMicExclusive = false) noexcept {
         config_.periodFrames = periodFrames;
         config_.exclusive = exclusive;
+        config_.virtualMicExclusive = virtualMicExclusive;
     }
     [[nodiscard]] const DeviceSelection& selection() const noexcept { return selection_; }
 
@@ -58,6 +61,9 @@ public:
         std::optional<devices::StreamInfo> virtualMic;
         std::optional<devices::StreamInfo> monitor;
         bool pullMode = false; ///< True when an output, not the microphone, drives processing.
+        /// Why the virtual microphone runs in shared mode although exclusive
+        /// mode was asked for it alone; empty otherwise.
+        std::string virtualMicSharedReason;
     };
     [[nodiscard]] ActiveDevices activeDevices() const;
 
@@ -117,6 +123,9 @@ private:
     };
 
     [[nodiscard]] Status openStreams(const DeviceSelection& selection);
+    /// One attempt; on failure `failed` names the device that failed.
+    [[nodiscard]] Status openStreamsOnce(const DeviceSelection& selection, bool virtualMicExclusive,
+                                         DeviceRole& failed);
     void closeStreams() noexcept;
     [[nodiscard]] DeviceSelection effectiveSelection() const;
     [[nodiscard]] Status send(const Command& command);
@@ -128,8 +137,9 @@ private:
     // Audio threads.
     void processCapture(const float* interleaved, std::size_t frames,
                         std::uint32_t channels) noexcept;
-    void renderForPull(OutputPort& driver, std::size_t frames, double now) noexcept;
-    void runGraph(std::span<const float> input, std::size_t frames, double now) noexcept;
+    void renderForPull(OutputPort& driver, std::size_t frames) noexcept;
+    /// `writeTime` < 0 is stamped when the first block is processed.
+    void runGraph(std::span<const float> input, std::size_t frames, double& writeTime) noexcept;
 
     devices::AudioBackend& backend_;
     EngineConfig config_;
@@ -142,6 +152,7 @@ private:
     std::unique_ptr<OutputPort> virtualMic_;
     std::unique_ptr<OutputPort> monitor_;
     OutputPort* pullDriver_ = nullptr;
+    std::string virtualMicSharedReason_;
 
     // Engine-rate buffers, sized when streams open.
     std::vector<float> engineIn_;

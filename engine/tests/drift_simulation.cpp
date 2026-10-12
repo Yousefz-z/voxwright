@@ -11,6 +11,12 @@ namespace vox::engine::test {
 
 DriftResult simulateDrift(double deviceRate, double ppm, double seconds, std::size_t producerBlock,
                           std::size_t deviceBlock, double jitterMs) {
+    return simulateDrift(deviceRate, ppm, seconds, producerBlock, deviceBlock, jitterMs, {});
+}
+
+DriftResult simulateDrift(double deviceRate, double ppm, double seconds, std::size_t producerBlock,
+                          std::size_t deviceBlock, double jitterMs,
+                          const ProcessingSetup& processing) {
     OutputStage stage;
     const auto target = static_cast<std::size_t>(std::ceil(0.002 * deviceRate));
     stage.prepare(kEngineRate, deviceRate, target, producerBlock);
@@ -25,7 +31,8 @@ DriftResult simulateDrift(double deviceRate, double ppm, double seconds, std::si
     };
     double producerNominal = 0.0;
     double producerTime = jitter();
-    double deviceTime = 0.0;
+    double deviceTime = processing.deviceOffsetMs * 1e-3;
+    const double processingSeconds = processing.processingMs * 1e-3;
     double phase = 0.0;
     std::vector<float> block(producerBlock);
     std::vector<float> out(deviceBlock);
@@ -36,12 +43,13 @@ DriftResult simulateDrift(double deviceRate, double ppm, double seconds, std::si
     double fillSum = 0.0;
     std::size_t samples = 0;
     while (deviceTime < seconds) {
-        if (producerTime <= deviceTime) {
+        const double landing = producerTime + processingSeconds;
+        if (landing <= deviceTime) {
             for (float& v : block) {
                 v = static_cast<float>(0.5 * std::sin(phase));
                 phase += 2.0 * std::numbers::pi * 1000.0 / kEngineRate;
             }
-            stage.push(block, producerTime);
+            stage.push(block, processing.stampAtLanding ? landing : producerTime);
             producerNominal += producerPeriod;
             producerTime = producerNominal + jitter();
             if (producerTime > seconds - 10.0) {

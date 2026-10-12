@@ -12,6 +12,13 @@ namespace {
 
 constexpr int kPollIntervalMs = 33;
 constexpr double kMeterFloorDb = -60.0;
+// Only WASAPI can hold a device exclusively; elsewhere the request would
+// always fall back to shared mode (D44).
+#if defined(Q_OS_WIN)
+constexpr bool kExclusiveVirtualMic = true;
+#else
+constexpr bool kExclusiveVirtualMic = false;
+#endif
 
 QString roleTitle(engine::DeviceRole role) {
     switch (role) {
@@ -115,6 +122,21 @@ bool AudioController::pickVirtualCableIfUnset() {
 
 bool AudioController::virtualCableFound() const {
     return virtualMicDevices_.firstVirtualCable() != nullptr;
+}
+
+bool AudioController::virtualMicIsCable() const {
+    if (!settings_.useVirtualMic) {
+        return false;
+    }
+    const auto& list = virtualMicDevices_.devices();
+    return std::ranges::any_of(list, [this](const devices::DeviceInfo& d) {
+        return d.isVirtualCable && QString::fromStdString(d.id) == settings_.virtualMicId;
+    });
+}
+
+QString AudioController::suggestedCableName() const {
+    const devices::DeviceInfo* cable = virtualMicDevices_.firstVirtualCable();
+    return cable != nullptr ? QString::fromStdString(cable->name) : QString();
 }
 
 QString AudioController::chatAppMicrophoneName() const {
@@ -333,7 +355,8 @@ void AudioController::startEngine() {
         break;
     }
     engine_.setDeviceOptions(static_cast<std::uint32_t>(settings_.periodFrames),
-                             settings_.exclusive);
+                             settings_.exclusive,
+                             kExclusiveVirtualMic && settings_.virtualMicExclusive);
     if (auto started = engine_.start(selection); !started) {
         notifications_.post(QStringLiteral("engine"), NotificationModel::Level::Error,
                             tr("Audio could not start"),
@@ -342,7 +365,25 @@ void AudioController::startEngine() {
     } else {
         notifications_.dismiss(QStringLiteral("engine"));
     }
+    reportVirtualMicSharing();
     emit runningChanged();
+}
+
+void AudioController::reportVirtualMicSharing() {
+    const auto active = engine_.activeDevices();
+    if (active.virtualMicSharedReason.empty() || !active.virtualMic) {
+        notifications_.dismiss(QStringLiteral("virtual-mic-shared"));
+        return;
+    }
+    notifications_.post(
+        QStringLiteral("virtual-mic-shared"), NotificationModel::Level::Warning,
+        tr("Screen shares can repeat your voice"),
+        tr("Windows did not let Voxwright keep \"%1\" to itself, so apps that share your screen "
+           "with sound, such as Discord, can send your voice twice. In Windows Sound settings, "
+           "open the cable's Properties > Advanced, turn on \"Allow applications to take "
+           "exclusive control of this device\", then try again.")
+            .arg(QString::fromStdString(active.virtualMic->deviceName)),
+        tr("Try again"), QStringLiteral("restart-audio"));
 }
 
 void AudioController::restart() {
@@ -556,6 +597,15 @@ void AudioController::setExclusiveMode(bool on) {
     startEngine();
 }
 
+void AudioController::setVirtualMicExclusive(bool on) {
+    if (on == settings_.virtualMicExclusive) {
+        return;
+    }
+    settings_.virtualMicExclusive = on;
+    emit settingsChanged();
+    startEngine();
+}
+
 // ---------------------------------------------------------------- polling
 
 double AudioController::meterPosition(double db) {
@@ -615,11 +665,14 @@ void AudioController::handleEvent(const engine::EngineEvent& event) {
         }
         notifications_.post(deviceKey(role), NotificationModel::Level::Warning, roleTitle(role),
                             message, tr("Audio settings"), QStringLiteral("open-audio"));
+        // The engine reopened the remaining devices.
+        reportVirtualMicSharing();
         emit runningChanged();
         break;
     }
     case Kind::DeviceRestored:
         notifications_.dismiss(deviceKey(static_cast<engine::DeviceRole>(event.value)));
+        reportVirtualMicSharing();
         emit runningChanged();
         break;
     case Kind::RestartFailed:

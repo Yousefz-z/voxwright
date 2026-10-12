@@ -437,3 +437,78 @@ headphones to the voice without pausing the microphone would also put
 the live microphone in the user's ears and could howl through speakers.
 Other apps get the speech alone, in the voice, as they do the speech
 that bypasses the voice.
+
+## D44. The virtual microphone is opened exclusively on Windows
+
+*2026-10-12.* Viewers of a Discord screen share heard the voice twice
+whenever Voxwright ran, even with the voice changer off. Screen sharing
+with sound captures every app except Discord through Windows process
+loopback, which is not tied to an output device: Voxwright playing the
+voice into the cable was captured too, and reached viewers beside the
+voice channel. A process-loopback probe that excluded Discord the way a
+screen share does caught a tone played shared into the cable at
+-15.1 dBFS, and Voxwright's own test sound at -18 dBFS; with the cable
+opened exclusively it caught nothing, while chat apps still received
+the tone at full level. Windows has no option for a shared stream to
+stay out of loopback capture, so the virtual microphone output opens in
+exclusive mode by default ("Keep my voice out of screen shares" on the
+Audio page). Windows gives an exclusive stream priority, so other apps
+playing into the cable are cut off, which keeps stray sounds out of the
+microphone too. If Windows refuses exclusive use (the cable's "Allow
+applications to take exclusive control" is off), the output falls back
+to shared mode and a banner explains how to allow it; if another app
+holds the cable exclusively, audio cannot start, as before. The
+headphones stay shared: hear-myself and sounds played there can still be
+captured, which only the user can avoid. Only Windows: CoreAudio and the
+Linux backends have no exclusive mode for these devices.
+
+## D45. Output stages widen their margin and stop winding up
+
+*2026-10-12.* On Windows with 10 ms device periods, some sessions dropped
+the voice out for 10 ms every 2 to 4 seconds (2 of 5 measured runs with a
+wireless headset and VB-CABLE, shared mode). Recorded callback times
+replayed through the output stage showed three causes. Writes were
+stamped when the microphone callback started, so a cable read during the
+voice processing (1 to 3 ms) fell before a write the controller counted
+as done. After each refill the fill sat up to 20 ms above the 2 ms
+target, the trim drained it at its limit for seconds, and the integral
+wound up meanwhile and carried the fill straight through the target into
+the next underrun; with the 128-frame blocks the drift tests used,
+refills were too small to show it. And a fixed 2 ms margin is less than
+some machines' scheduling jitter. Now writes are stamped when they land,
+the integral stops while the trim is at its limit, and each underrun
+raises the target by its starting value up to tenfold, until the devices
+are reopened. Replaying ten recorded 20 s sessions with 1 to 3 ms of
+processing gave 33 to 39 underruns before and 0 to 3 after; with only the
+phase between the two callbacks varied and no processing, the old
+controller dropped out 11 to 14 times a minute at 6 of 14 phases, the new
+one at none of those 6. Latency rises by 2 ms only on a machine that has
+dropped out, and the readout shows it.
+
+## D46. A realistic female voice by register, built from public behavior
+
+*2026-10-12.* The owner asked for a realistic female voice like the
+"Feminine" preset of a game's built-in voice changer. Public coverage
+names the preset and nothing more; the game's files were not opened, as
+D1 requires for any product, so nothing of its filters, parameters, or
+models was used. The voice is built from published voice science
+instead: women speak around 200 to 220 Hz against 100 to 130 Hz for
+men, and their formants sit about 15 % higher from a shorter vocal tract.
+
+A fixed semitone shift cannot serve both a 95 Hz and a 150 Hz speaker,
+so the pitch block got a Register mode: it learns the speaker's typical
+pitch (a log-domain average of voiced input, fast for the first 1.5 s
+of voice, then over about 3 s) and moves it to a target, keeping the
+melody around it. Measured on synthetic phrases from 95, 120, and
+150 Hz speakers: 201, 203, and 201 Hz out for a 210 Hz target, with the
+melody's range kept (4.1 to 4.3 semitones; at least 70 % of the input's
+is required). "Natural Feminine" adds a 2.5 semitone formant raise
+(15.5 %), 12 % breath from the whisper block, and an EQ that cuts below
+120 Hz and lifts presence and air; sliders for target pitch, formant,
+and breath. Formants rise much less than the pitch, which keeps it from
+sounding like a child or a cartoon.
+
+Neural conversion (RVC and similar) sounds more convincing but needs a
+model trained on a target voice, usually a real person's, and 100 to
+300 ms of delay on a CPU. The ML track (D13, D35) runs a model the user
+supplies; none ships.

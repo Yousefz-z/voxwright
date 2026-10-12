@@ -115,7 +115,7 @@ public:
                     std::uint32_t channels) noexcept override {
         const double now = engine_.backend_.now();
         if (driving) {
-            engine_.renderForPull(*this, frames, now);
+            engine_.renderForPull(*this, frames);
         }
         stage.pull(interleaved, frames, channels, now);
     }
@@ -177,6 +177,7 @@ AudioEngine::ActiveDevices AudioEngine::activeDevices() const {
         active.monitor = monitor_->stream->info();
     }
     active.pullMode = pullDriver_ != nullptr;
+    active.virtualMicSharedReason = virtualMicSharedReason_;
     return active;
 }
 
@@ -191,6 +192,24 @@ DeviceSelection AudioEngine::effectiveSelection() const {
 // ---------------------------------------------------------------- streams
 
 Status AudioEngine::openStreams(const DeviceSelection& selection) {
+    virtualMicSharedReason_.clear();
+    const bool tryExclusive =
+        selection.useVirtualMic && config_.virtualMicExclusive && !config_.exclusive;
+    DeviceRole failed = DeviceRole::Input;
+    auto ok = openStreamsOnce(selection, tryExclusive, failed);
+    if (ok || !tryExclusive || failed != DeviceRole::VirtualMic ||
+        ok.error().code == ErrorCode::DeviceNotFound) {
+        return ok;
+    }
+    // Exclusive use was refused (the device does not allow it, or does not
+    // take the format). Shared mode still carries the voice; only screen
+    // sharing can then pick it up a second time (D44).
+    virtualMicSharedReason_ = ok.error().message;
+    return openStreamsOnce(selection, false, failed);
+}
+
+Status AudioEngine::openStreamsOnce(const DeviceSelection& selection, bool virtualMicExclusive,
+                                    DeviceRole& failed) {
     closeStreams();
     const devices::StreamConfig base{{}, 0, 0, config_.periodFrames, config_.exclusive};
 
@@ -199,6 +218,7 @@ Status AudioEngine::openStreams(const DeviceSelection& selection) {
         devices::StreamConfig c = base;
         c.deviceId = selection.inputId;
         auto stream = backend_.openCapture(c, *input_);
+        failed = DeviceRole::Input;
         if (!stream) {
             closeStreams();
             return withRole(stream.error(), DeviceRole::Input);
@@ -209,11 +229,13 @@ Status AudioEngine::openStreams(const DeviceSelection& selection) {
             return ok;
         }
     }
-    const auto openOutput = [&](const std::string& id, DeviceRole role,
+    const auto openOutput = [&](const std::string& id, DeviceRole role, bool exclusive,
                                 std::unique_ptr<OutputPort>& port) -> Status {
+        failed = role;
         port = std::make_unique<OutputPort>(*this);
         devices::StreamConfig c = base;
         c.deviceId = id;
+        c.exclusive = c.exclusive || exclusive;
         auto stream = backend_.openPlayback(c, *port);
         if (!stream) {
             return withRole(stream.error(), role);
@@ -222,14 +244,15 @@ Status AudioEngine::openStreams(const DeviceSelection& selection) {
         return validateFormat(port->stream->info(), role);
     };
     if (selection.useVirtualMic) {
-        if (auto ok = openOutput(selection.virtualMicId, DeviceRole::VirtualMic, virtualMic_);
+        if (auto ok = openOutput(selection.virtualMicId, DeviceRole::VirtualMic,
+                                 virtualMicExclusive, virtualMic_);
             !ok) {
             closeStreams();
             return ok;
         }
     }
     if (selection.useMonitor) {
-        if (auto ok = openOutput(selection.monitorId, DeviceRole::Monitor, monitor_); !ok) {
+        if (auto ok = openOutput(selection.monitorId, DeviceRole::Monitor, false, monitor_); !ok) {
             closeStreams();
             return ok;
         }
@@ -273,12 +296,14 @@ Status AudioEngine::openStreams(const DeviceSelection& selection) {
             continue;
         }
         if (auto ok = port->stream->start(); !ok) {
+            failed = role;
             closeStreams();
             return withRole(ok.error(), role);
         }
     }
     if (input_) {
         if (auto ok = input_->stream->start(); !ok) {
+            failed = DeviceRole::Input;
             closeStreams();
             return withRole(ok.error(), DeviceRole::Input);
         }
@@ -304,18 +329,26 @@ void AudioEngine::closeStreams() noexcept {
 
 // ---------------------------------------------------------------- audio threads
 
-void AudioEngine::runGraph(std::span<const float> input, std::size_t frames, double now) noexcept {
+void AudioEngine::runGraph(std::span<const float> input, std::size_t frames,
+                           double& writeTime) noexcept {
     if (frames == 0) {
         return;
     }
     const auto mic = std::span<float>(micOut_).first(frames);
     const auto monitor = std::span<float>(monitorOut_).first(frames);
     graph_.process(input, mic, monitor);
+    // The output stages steer by when the audio lands, after processing:
+    // stamped at the callback start, a write could land after the device
+    // read it was meant for. Every write of one callback keeps the first
+    // one's time (see OutputStage::push).
+    if (writeTime < 0.0) {
+        writeTime = backend_.now();
+    }
     if (virtualMic_) {
-        virtualMic_->stage.push(mic, now);
+        virtualMic_->stage.push(mic, writeTime);
     }
     if (monitor_) {
-        monitor_->stage.push(monitor, now);
+        monitor_->stage.push(monitor, writeTime);
     }
 }
 
@@ -323,7 +356,7 @@ void AudioEngine::processCapture(const float* interleaved, std::size_t frames,
                                  std::uint32_t channels) noexcept {
     const ScopedNoDenormals noDenormals;
     const auto started = std::chrono::steady_clock::now();
-    const double now = backend_.now();
+    double writeTime = -1.0;
     InputPort& port = *input_;
     const std::uint32_t ch = std::max<std::uint32_t>(1, channels);
     const float scale = 1.0F / static_cast<float>(ch);
@@ -341,13 +374,13 @@ void AudioEngine::processCapture(const float* interleaved, std::size_t frames,
         }
         const auto mono = std::span<const float>(port.mono).first(n);
         if (!port.resample) {
-            runGraph(mono, n, now);
+            runGraph(mono, n, writeTime);
             engineFrames += n;
         } else {
             for (std::size_t offset = 0; offset < n;) {
                 const auto counts = port.resampler.process(mono.subspan(offset), engineIn_);
                 runGraph(std::span<const float>(engineIn_).first(counts.produced), counts.produced,
-                         now);
+                         writeTime);
                 engineFrames += counts.produced;
                 offset += counts.consumed;
                 if (counts.consumed == 0 && counts.produced == 0) {
@@ -367,14 +400,15 @@ void AudioEngine::processCapture(const float* interleaved, std::size_t frames,
     }
 }
 
-void AudioEngine::renderForPull(OutputPort& driver, std::size_t frames, double now) noexcept {
+void AudioEngine::renderForPull(OutputPort& driver, std::size_t frames) noexcept {
     const ScopedNoDenormals noDenormals;
     const auto started = std::chrono::steady_clock::now();
+    double writeTime = -1.0;
     const std::size_t want = driver.stage.targetFrames() + frames;
     std::size_t engineFrames = 0;
     // Bounded: each step adds about kPullChunk device frames.
     for (int guard = 0; driver.stage.fill() < want && guard < 256; ++guard) {
-        runGraph({}, kPullChunk, now);
+        runGraph({}, kPullChunk, writeTime);
         engineFrames += kPullChunk;
     }
     if (engineFrames > 0) {

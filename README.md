@@ -28,7 +28,7 @@ Development happens in milestones; each one is a commit.
 | Milestone | Contents | State |
 |---|---|---|
 | 1 | C++20 DSP core, test-only offline render path, measurements | Done |
-| 2 | Effect registry (21 blocks) and 54 voice presets, each measured | Done |
+| 2 | Effect registry (21 blocks) and 55 voice presets, each measured | Done |
 | 3 | Real-time engine, device routing, monitor, gate, noise reduction, push-to-talk | Done |
 | 4 | Qt Quick app shell with device selection and live voice switching | Done |
 | 5 | Soundboard with 18 built-in sounds, import, play modes, and global hotkeys | Done |

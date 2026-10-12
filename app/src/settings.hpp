@@ -32,6 +32,9 @@ struct AppSettings {
     bool virtualMicChosen = false; ///< False until the user (or auto-detection) picked one.
     int periodFrames = 128;
     bool exclusive = false;
+    /// The virtual microphone alone in exclusive mode, which keeps screen
+    /// sharing from capturing the voice a second time (Windows, D44).
+    bool virtualMicExclusive = true;
 
     // Input and monitoring.
     bool hearMyself = false;

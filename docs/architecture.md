@@ -44,7 +44,7 @@ through Catch2 without a UI or audio device.
 |---|---|---|
 | `core/` | `Result<T>`, typed `Error` with actionable messages, SPSC queue, SPSC ring buffer, object channel (hands heap objects to the audio thread and back) | none |
 | `dsp/` | Biquad/SVF filters, delay lines, LFOs, envelope followers, pitch tracker, PSOLA pitch shifter, spectral shifter, vocoder, FDN reverb, dynamics, distortion, modulation effects, ambience synthesis, loudness meter, feedback detector, RNNoise wrapper, streaming and one-shot resamplers | Signalsmith Stretch (MIT), RNNoise (BSD-3), libsamplerate (BSD-2) |
-| `plugins/` | Effect descriptors (parameter metadata), factory registry, node wrappers, preset and macro model, JSON preset parser, 54 voice presets | nlohmann/json (MIT) |
+| `plugins/` | Effect descriptors (parameter metadata), factory registry, node wrappers, preset and macro model, JSON preset parser, 55 voice presets | nlohmann/json (MIT) |
 | `engine/` | Processing graph, voice chain hot swap, transmit control (mute, push-to-talk, push-to-mute, censor), soundboard player, speech player, mixer buses, output limiters, per-output drift compensation, device loss and recovery, latency breakdown, metering, command and event queues | none |
 | `devices/` | `AudioBackend` interface, miniaudio backend with per-failure error mapping, fake backend (simulated time, injected failures and disconnects), audio file decoding, virtual cable detection | miniaudio (MIT-0) |
 | `app/` | QML UI, view models, global hotkeys, tray, autostart, settings store, text to speech, setup guide with the virtual microphone check | Qt 6.8 (LGPL-3) |
@@ -131,20 +131,26 @@ setting) into a ring buffer, whose ratio a PI controller trims by up to
   since its last read, from the backend's clock) once per producer
   callback, just before it writes. That quantity does not jump when a
   device read moves past a producer write, so the controller does not
-  chase the beat between the two callback rates.
+  chase the beat between the two callback rates. The write is stamped
+  when it lands, after the graph has run, not when the callback started:
+  a read that falls during processing then counts as before the write
+  (D45).
 * Target: 2 ms at that point, which covers scheduling jitter. Because the
   measurement already accounts for the next device read, no further
   period of buffering is needed.
 * For 20 s after a start or a refill the loop runs fast (0.4 rad/s) to
   find the clock difference; then it tracks slowly (0.1 rad/s) with the
   error and the trim both smoothed, so jitter does not reach the ratio as
-  phase noise. Per-block random ratio noise of +-37 ppm measured 72 dB
+  phase noise. The integral stops while the trim sits at its limit, so
+  draining a refill at full trim does not wind it up (D45). Per-block random ratio noise of +-37 ppm measured 72 dB
   tone-to-noise; the tracking loop holds the ratio within about 10 to
   20 ppm and the output at 97 dB, the converter's own floor at a
   non-unity ratio.
 * At start and after an underrun the stage plays silence until it holds
   the target plus one device period plus the producer's last burst, then
-  resumes; the first reads cannot run dry.
+  resumes; the first reads cannot run dry. Each underrun also raises the
+  target by 2 ms, up to 20 ms, for as long as the devices stay open
+  (D45).
 * In pull mode the driving output renders inside its own callback, so it
   has no drift and no refill margin ("synchronous").
 
@@ -271,6 +277,19 @@ render endpoint the engine plays into and a capture endpoint that chat
 apps record from. This keeps the engine free of driver-specific code:
 the first-run flow detects the cable by name and verifies it with a
 loopback chirp test.
+
+On Windows the virtual microphone output opens in WASAPI exclusive mode
+by default; the microphone and headphones stay shared. Screen sharing
+with sound (Discord Go Live, among others) records every app except
+itself through process loopback, on every output device, so a shared
+cable output would reach viewers a second time beside the voice channel.
+Exclusive streams bypass the Windows mixer where that capture taps in.
+Measured on Windows 11 with VB-CABLE: a tone played shared into
+"CABLE In 16ch" or "CABLE Input" reached a process-loopback capture at
+-15.1 dBFS, the same tone played exclusively did not (-96.6 dBFS, the
+capture's floor), and "CABLE Output" received it at -15 dBFS either way.
+When Windows refuses exclusive use, the stream falls back to shared mode
+and the app says so (D44).
 
 The first-party driver path is designed but not shippable from this
 environment:

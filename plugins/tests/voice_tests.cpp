@@ -4,6 +4,7 @@
 #include <vox/plugins/voice_library.hpp>
 #include <vox/testing/alloc_trap.hpp>
 #include <vox/testing/analysis.hpp>
+#include <vox/testing/render.hpp>
 #include <vox/testing/signals.hpp>
 #include <vox/testing/timing.hpp>
 
@@ -99,6 +100,11 @@ TEST_CASE("Voices meet their measured pitch expectations", "[plugins][voices]") 
             CHECK(std::abs(vox::testing::centsBetween(
                       m.outputMedianF0, static_cast<double>(*v.expect.fixedPitchHz))) < 15.0);
         }
+        if (v.expect.registerHz) {
+            // The register is learned while speaking, so within 1.5 semitones.
+            CHECK(std::abs(vox::testing::centsBetween(
+                      m.outputMedianF0, static_cast<double>(*v.expect.registerHz))) < 150.0);
+        }
         if (v.expect.unpitched) {
             CHECK(m.voicedFraction < 0.2);
         }
@@ -143,6 +149,41 @@ TEST_CASE("Voice chains do not allocate while processing", "[plugins][voices][re
         }
         INFO(v.id);
         CHECK(allocations == 0);
+    }
+}
+
+TEST_CASE("Natural Feminine lands in a female range from deep and light voices alike",
+          "[plugins][voices]") {
+    const auto& all = voices();
+    const auto it = std::find_if(all.begin(), all.end(),
+                                 [](const VoicePreset& v) { return v.id == "natural-feminine"; });
+    REQUIRE(it != all.end());
+    for (const double base : {95.0, 120.0, 150.0}) {
+        auto chain =
+            vox::plugins::VoiceChain::build(*it, vox::plugins::VoiceSettings{},
+                                            EffectRegistry::builtin(), {48000.0, 512, 75.0F})
+                .value();
+        const auto phrase = vox::testing::synthPhrase(base);
+        std::vector<float> in = phrase.audio;
+        in.insert(in.end(), phrase.audio.begin(), phrase.audio.end());
+        const auto out = vox::testing::renderOffline(*chain, in, 256);
+        // The second time through, once the speaker's register is learned.
+        const auto second = std::span<const float>(out).subspan(
+            chain->latencySamples() + phrase.audio.size(), phrase.audio.size() - 4800);
+        const double median =
+            vox::testing::medianVoiced(vox::testing::f0Track(second, 48000.0, 60.0, 600.0));
+        // Formants rise by about 15 %, as from a shorter vocal tract: the
+        // spectral centroid moves up, without the chipmunk sound of moving
+        // formants with the pitch (about 75 % here).
+        const auto first = std::span<const float>(phrase.audio);
+        const double centroidRatio = vox::testing::spectralCentroidHz(second, 48000.0) /
+                                     vox::testing::spectralCentroidHz(first, 48000.0);
+        INFO(base << " Hz speaker: median " << median << " Hz, centroid ratio " << centroidRatio);
+        CHECK(median > 180.0);
+        CHECK(median < 240.0);
+        CHECK(centroidRatio > 1.1);
+        CHECK(centroidRatio < 1.6);
+        CHECK(vox::testing::allFinite(out));
     }
 }
 

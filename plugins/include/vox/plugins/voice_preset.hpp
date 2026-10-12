@@ -54,6 +54,7 @@ struct MacroSpec {
 struct VoiceExpectation {
     std::optional<float> pitchShiftSemitones; ///< Median f0 change on a test phrase.
     std::optional<float> fixedPitchHz;        ///< Monotone output pitch.
+    std::optional<float> registerHz;          ///< Typical output pitch (register mode).
     bool unpitched = false;                   ///< Output must not be periodic (whisper).
     float maxLatencyMs = 60.0F;
 };

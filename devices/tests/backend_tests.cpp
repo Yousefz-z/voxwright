@@ -44,6 +44,7 @@ TEST_CASE("Virtual cables are recognized by name", "[devices]") {
     CHECK(looksLikeVirtualCable("BlackHole 2ch"));
     CHECK(looksLikeVirtualCable("VoiceMeeter Input (VB-Audio VoiceMeeter VAIO)"));
     CHECK(looksLikeVirtualCable("Voxwright Microphone"));
+    CHECK(looksLikeVirtualCable("Line 1 (Virtual Audio Cable)"));
     CHECK_FALSE(looksLikeVirtualCable("Speakers (Realtek High Definition Audio)"));
     CHECK_FALSE(looksLikeVirtualCable("MacBook Pro Microphone"));
 }

@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <string_view>
 
 namespace vox::ml {
 namespace {
@@ -80,8 +81,12 @@ std::string NeuralModel::runtimeVersion() {
 }
 
 Result<std::unique_ptr<NeuralModel>> NeuralModel::load(const std::string& path, int threads) {
+    // `path` is UTF-8; a narrow std::filesystem::path would read it in the
+    // ANSI code page on Windows and miss any folder with other characters.
+    const std::filesystem::path file(
+        std::u8string_view(reinterpret_cast<const char8_t*>(path.data()), path.size()));
     std::error_code ec;
-    if (!std::filesystem::is_regular_file(path, ec)) {
+    if (!std::filesystem::is_regular_file(file, ec)) {
         return modelError(ErrorCode::FileNotFound, path,
                           "was not found. Choose the .onnx file again.");
     }
@@ -96,7 +101,7 @@ Result<std::unique_ptr<NeuralModel>> NeuralModel::load(const std::string& path, 
         // core the audio thread needs.
         options.AddConfigEntry("session.intra_op.allow_spinning", "0");
 #ifdef _WIN32
-        const std::wstring widePath = std::filesystem::path(path).wstring();
+        const std::wstring widePath = file.wstring();
         impl->session = Ort::Session(environment(), widePath.c_str(), options);
 #else
         impl->session = Ort::Session(environment(), path.c_str(), options);

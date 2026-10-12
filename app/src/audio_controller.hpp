@@ -35,6 +35,11 @@ class AudioController : public QObject {
     Q_PROPERTY(
         QString monitorDeviceId READ monitorDeviceId WRITE setMonitorDeviceId NOTIFY devicesChanged)
     Q_PROPERTY(bool virtualCableFound READ virtualCableFound NOTIFY devicesChanged)
+    /// The selected virtual microphone output is a virtual cable (not, say,
+    /// speakers), so chat apps can record from its other side.
+    Q_PROPERTY(bool virtualMicIsCable READ virtualMicIsCable NOTIFY devicesChanged)
+    /// The playback side of the first virtual cable found, to suggest.
+    Q_PROPERTY(QString suggestedCableName READ suggestedCableName NOTIFY devicesChanged)
     Q_PROPERTY(QString chatAppMicrophoneName READ chatAppMicrophoneName NOTIFY devicesChanged)
     Q_PROPERTY(QString virtualMicName READ virtualMicName NOTIFY devicesChanged)
     Q_PROPERTY(QString virtualCableProduct READ virtualCableProduct CONSTANT)
@@ -65,6 +70,10 @@ class AudioController : public QObject {
         double monitorLevelDb READ monitorLevelDb WRITE setMonitorLevelDb NOTIFY settingsChanged)
     Q_PROPERTY(int bufferFrames READ bufferFrames WRITE setBufferFrames NOTIFY settingsChanged)
     Q_PROPERTY(bool exclusiveMode READ exclusiveMode WRITE setExclusiveMode NOTIFY settingsChanged)
+    /// Keeps the virtual microphone to Voxwright (exclusive mode) so screen
+    /// sharing cannot send the voice a second time. Windows only.
+    Q_PROPERTY(bool virtualMicExclusive READ virtualMicExclusive WRITE setVirtualMicExclusive NOTIFY
+                   settingsChanged)
     /// 0 always on, 1 push-to-talk, 2 push-to-mute.
     Q_PROPERTY(int transmitMode READ transmitMode WRITE setTransmitMode NOTIFY settingsChanged)
     Q_PROPERTY(
@@ -108,6 +117,8 @@ public:
     [[nodiscard]] QString monitorDeviceId() const { return settings_.monitorId; }
     void setMonitorDeviceId(const QString& id);
     [[nodiscard]] bool virtualCableFound() const;
+    [[nodiscard]] bool virtualMicIsCable() const;
+    [[nodiscard]] QString suggestedCableName() const;
     [[nodiscard]] QString chatAppMicrophoneName() const;
     /// The device Voxwright plays into ("CABLE Input" for VB-CABLE).
     [[nodiscard]] QString virtualMicName() const { return settings_.virtualMicName; }
@@ -154,6 +165,8 @@ public:
     void setBufferFrames(int frames);
     [[nodiscard]] bool exclusiveMode() const { return settings_.exclusive; }
     void setExclusiveMode(bool on);
+    [[nodiscard]] bool virtualMicExclusive() const { return settings_.virtualMicExclusive; }
+    void setVirtualMicExclusive(bool on);
     [[nodiscard]] int transmitMode() const { return static_cast<int>(settings_.transmitMode); }
     void setTransmitMode(int mode);
     [[nodiscard]] double releaseDelayMs() const {
@@ -202,6 +215,9 @@ private:
     /// cable, to the first device that is not a cable, and says why.
     void keepOffVirtualMicCable(engine::DeviceRole role, const DeviceListModel& list,
                                 std::string& id, bool& use);
+    /// Warns while the virtual microphone runs shared although it should be
+    /// exclusive, since screen sharing can then capture the voice.
+    void reportVirtualMicSharing();
 
     engine::AudioEngine& engine_;
     AppSettings& settings_;

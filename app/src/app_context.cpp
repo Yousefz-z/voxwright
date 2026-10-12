@@ -208,6 +208,13 @@ void AppContext::scheduleSave() {
     saveTimer_.start();
 }
 
+void AppContext::testVirtualMicrophone() {
+    const bool cable = audio_->virtualMicIsCable();
+    micCheck_->start(audio_->chatAppMicrophoneName(),
+                     cable || !settings_.useVirtualMic ? QString() : audio_->virtualMicName(),
+                     cable ? QString() : audio_->suggestedCableName());
+}
+
 void AppContext::runAction(const QString& action) {
     if (action == QStringLiteral("restart-audio")) {
         audio_->restart();

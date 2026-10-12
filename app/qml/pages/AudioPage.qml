@@ -76,18 +76,21 @@ Item {
                             anchors.margins: 8
                             spacing: 10
                             Icon {
-                                name: page.audio.virtualCableFound ? "check" : "warning"
-                                color: page.audio.virtualCableFound ? Theme.positive : Theme.warning
+                                name: page.audio.virtualMicIsCable ? "check" : "warning"
+                                color: page.audio.virtualMicIsCable ? Theme.positive : Theme.warning
                             }
                             Text {
+                                objectName: "virtualMicAdvice"
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSmall
                                 color: Theme.textSecondary
-                                text: page.audio.virtualCableFound
+                                text: page.audio.virtualMicIsCable
                                       ? qsTr("In Discord, Zoom, OBS, or your game, choose \"%1\" as the microphone.").arg(page.audio.chatAppMicrophoneName)
-                                      : qsTr("No virtual microphone found. Install %1 (free) to use your voice in other apps.").arg(page.audio.virtualCableProduct)
+                                      : page.audio.virtualCableFound
+                                        ? qsTr("This output is not a virtual cable, so other apps cannot record your voice from it. Choose \"%1\" above.").arg(page.audio.suggestedCableName)
+                                        : qsTr("No virtual microphone found. Install %1 (free) to use your voice in other apps.").arg(page.audio.virtualCableProduct)
                             }
                             Button {
                                 id: getCable
@@ -318,6 +321,14 @@ Item {
                             onActivated: index => page.audio.bufferFrames = model[index]
                             Accessible.name: qsTr("Buffer size")
                         }
+                    }
+                    SwitchRow {
+                        objectName: "virtualMicExclusive"
+                        visible: Qt.platform.os === "windows"
+                        label: qsTr("Keep my voice out of screen shares")
+                        detail: qsTr("Only Voxwright can play into the virtual microphone, so apps that share your screen with sound, such as Discord, cannot send your voice twice. Hear myself and sounds in your headphones can still be shared.")
+                        checked: page.audio.virtualMicExclusive
+                        onToggled: on => page.audio.virtualMicExclusive = on
                     }
                     SwitchRow {
                         visible: Qt.platform.os === "windows"
