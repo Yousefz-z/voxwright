@@ -36,6 +36,7 @@ attach logs or measurements to the pull request that records them.
 | A15 | Both | With laptop speakers (not headphones) as the monitor, enable hear-myself and turn the volume up until it howls. | Within about a second hear-myself switches off by itself and the app explains why. | | | |
 | A16 | Both | Enable push-to-talk with the default 150 ms release delay. Speak while holding the key; release it mid-word. | Nothing is sent while the key is up; the end of the word after release is still sent; no clicks at either edge. (The global talk key itself is row H3.) | | | |
 | A17 | Both | Turn noise reduction on next to a fan or air conditioner, then off. | The fan noise drops clearly while speech stays natural; toggling never clicks. | | | |
+| A18 | Windows 11 | In Discord, share the screen with sound (Go Live) while a second account watches, with "Keep my voice out of screen shares" on, then off. Speak, and play a sound. | On: the viewer hears the voice once, from the voice channel. Off: twice, slightly apart. | 2026-10-12 | Scripted (Yousef's PC) | Partial, without Discord: a process-loopback capture that leaves out Discord, as a screen share does, recorded Voxwright's test sound at -18 dBFS with the option off and nothing (-96.6 dBFS) with it on; the virtual microphone test passed with it on. A real Go Live with a viewer is still to do. |
 
 ## Application window (milestone 4)
 

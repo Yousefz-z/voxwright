@@ -20,6 +20,7 @@ TEST_CASE("Settings survive a save and load unchanged", "[app][settings]") {
     s.useVirtualMic = false;
     s.periodFrames = 256;
     s.exclusive = true;
+    s.virtualMicExclusive = false;
     s.hearMyself = true;
     s.noiseReduction = true;
     s.noiseReductionStrength = 0.75F;
@@ -42,6 +43,7 @@ TEST_CASE("Settings survive a save and load unchanged", "[app][settings]") {
     CHECK_FALSE(l.useVirtualMic);
     CHECK(l.periodFrames == 256);
     CHECK(l.exclusive);
+    CHECK_FALSE(l.virtualMicExclusive);
     CHECK(l.hearMyself);
     CHECK(l.noiseReduction);
     CHECK(l.noiseReductionStrength == 0.75F);
@@ -63,6 +65,20 @@ TEST_CASE("A missing settings file means defaults without a warning", "[app][set
     const auto loaded = SettingsStore(dir.filePath(QStringLiteral("settings.json"))).load();
     CHECK_FALSE(loaded.problem);
     CHECK(loaded.settings.currentVoiceId == QStringLiteral("clean-voice"));
+}
+
+TEST_CASE("Settings saved before 0.1.2 keep the voice out of screen shares", "[app][settings]") {
+    const QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("settings.json"));
+    {
+        QFile f(path);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write(R"({"version": 1, "devices": {"exclusive": false, "periodFrames": 480}})");
+    }
+    const auto loaded = SettingsStore(path).load();
+    REQUIRE_FALSE(loaded.problem);
+    CHECK(loaded.settings.virtualMicExclusive);
+    CHECK_FALSE(loaded.settings.exclusive);
 }
 
 TEST_CASE("A damaged settings file is kept aside and reported", "[app][settings][errors]") {

@@ -272,6 +272,19 @@ apps record from. This keeps the engine free of driver-specific code:
 the first-run flow detects the cable by name and verifies it with a
 loopback chirp test.
 
+On Windows the virtual microphone output opens in WASAPI exclusive mode
+by default; the microphone and headphones stay shared. Screen sharing
+with sound (Discord Go Live, among others) records every app except
+itself through process loopback, on every output device, so a shared
+cable output would reach viewers a second time beside the voice channel.
+Exclusive streams bypass the Windows mixer where that capture taps in.
+Measured on Windows 11 with VB-CABLE: a tone played shared into
+"CABLE In 16ch" or "CABLE Input" reached a process-loopback capture at
+-15.1 dBFS, the same tone played exclusively did not (-96.6 dBFS, the
+capture's floor), and "CABLE Output" received it at -15 dBFS either way.
+When Windows refuses exclusive use, the stream falls back to shared mode
+and the app says so (D44).
+
 The first-party driver path is designed but not shippable from this
 environment:
 

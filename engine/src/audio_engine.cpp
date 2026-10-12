@@ -177,6 +177,7 @@ AudioEngine::ActiveDevices AudioEngine::activeDevices() const {
         active.monitor = monitor_->stream->info();
     }
     active.pullMode = pullDriver_ != nullptr;
+    active.virtualMicSharedReason = virtualMicSharedReason_;
     return active;
 }
 
@@ -191,6 +192,24 @@ DeviceSelection AudioEngine::effectiveSelection() const {
 // ---------------------------------------------------------------- streams
 
 Status AudioEngine::openStreams(const DeviceSelection& selection) {
+    virtualMicSharedReason_.clear();
+    const bool tryExclusive =
+        selection.useVirtualMic && config_.virtualMicExclusive && !config_.exclusive;
+    DeviceRole failed = DeviceRole::Input;
+    auto ok = openStreamsOnce(selection, tryExclusive, failed);
+    if (ok || !tryExclusive || failed != DeviceRole::VirtualMic ||
+        ok.error().code == ErrorCode::DeviceNotFound) {
+        return ok;
+    }
+    // Exclusive use was refused (the device does not allow it, or does not
+    // take the format). Shared mode still carries the voice; only screen
+    // sharing can then pick it up a second time (D44).
+    virtualMicSharedReason_ = ok.error().message;
+    return openStreamsOnce(selection, false, failed);
+}
+
+Status AudioEngine::openStreamsOnce(const DeviceSelection& selection, bool virtualMicExclusive,
+                                    DeviceRole& failed) {
     closeStreams();
     const devices::StreamConfig base{{}, 0, 0, config_.periodFrames, config_.exclusive};
 
@@ -199,6 +218,7 @@ Status AudioEngine::openStreams(const DeviceSelection& selection) {
         devices::StreamConfig c = base;
         c.deviceId = selection.inputId;
         auto stream = backend_.openCapture(c, *input_);
+        failed = DeviceRole::Input;
         if (!stream) {
             closeStreams();
             return withRole(stream.error(), DeviceRole::Input);
@@ -209,11 +229,13 @@ Status AudioEngine::openStreams(const DeviceSelection& selection) {
             return ok;
         }
     }
-    const auto openOutput = [&](const std::string& id, DeviceRole role,
+    const auto openOutput = [&](const std::string& id, DeviceRole role, bool exclusive,
                                 std::unique_ptr<OutputPort>& port) -> Status {
+        failed = role;
         port = std::make_unique<OutputPort>(*this);
         devices::StreamConfig c = base;
         c.deviceId = id;
+        c.exclusive = c.exclusive || exclusive;
         auto stream = backend_.openPlayback(c, *port);
         if (!stream) {
             return withRole(stream.error(), role);
@@ -222,14 +244,15 @@ Status AudioEngine::openStreams(const DeviceSelection& selection) {
         return validateFormat(port->stream->info(), role);
     };
     if (selection.useVirtualMic) {
-        if (auto ok = openOutput(selection.virtualMicId, DeviceRole::VirtualMic, virtualMic_);
+        if (auto ok = openOutput(selection.virtualMicId, DeviceRole::VirtualMic,
+                                 virtualMicExclusive, virtualMic_);
             !ok) {
             closeStreams();
             return ok;
         }
     }
     if (selection.useMonitor) {
-        if (auto ok = openOutput(selection.monitorId, DeviceRole::Monitor, monitor_); !ok) {
+        if (auto ok = openOutput(selection.monitorId, DeviceRole::Monitor, false, monitor_); !ok) {
             closeStreams();
             return ok;
         }
@@ -273,12 +296,14 @@ Status AudioEngine::openStreams(const DeviceSelection& selection) {
             continue;
         }
         if (auto ok = port->stream->start(); !ok) {
+            failed = role;
             closeStreams();
             return withRole(ok.error(), role);
         }
     }
     if (input_) {
         if (auto ok = input_->stream->start(); !ok) {
+            failed = DeviceRole::Input;
             closeStreams();
             return withRole(ok.error(), DeviceRole::Input);
         }

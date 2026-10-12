@@ -87,6 +87,16 @@ void FakeBackend::failNextOpen(const std::string& deviceId, Error error) {
     failures_.insert_or_assign(deviceId, std::move(error));
 }
 
+void FakeBackend::refuseExclusive(const std::string& deviceId, Error error) {
+    const std::scoped_lock lock(mutex_);
+    exclusiveRefusals_.insert_or_assign(deviceId, std::move(error));
+}
+
+void FakeBackend::allowExclusive(const std::string& deviceId) {
+    const std::scoped_lock lock(mutex_);
+    exclusiveRefusals_.erase(deviceId);
+}
+
 Result<std::vector<DeviceInfo>> FakeBackend::enumerate(DeviceKind kind) {
     const std::scoped_lock lock(mutex_);
     std::vector<DeviceInfo> out;
@@ -104,6 +114,10 @@ Result<DeviceInfo> FakeBackend::resolve(const StreamConfig& config, DeviceKind k
     }
     for (const DeviceInfo& d : devices_) {
         if (d.kind == kind && (config.deviceId.empty() ? d.isDefault : d.id == config.deviceId)) {
+            if (const auto refusal = exclusiveRefusals_.find(d.id);
+                config.exclusive && refusal != exclusiveRefusals_.end()) {
+                return refusal->second;
+            }
             return d;
         }
     }

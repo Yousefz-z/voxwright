@@ -257,6 +257,8 @@ TEST_CASE("Audio that cannot start says which device and why", "[app][controller
     TestApp t;
     auto& ctx = t.context();
     REQUIRE(ctx.audio()->virtualMicDeviceId() == QStringLiteral("cable"));
+    // Shared mode, so the one failure below is not retried in another mode.
+    ctx.audio()->setVirtualMicExclusive(false);
     t.backend().failNextOpen("cable",
                              vox::makeError(vox::ErrorCode::DeviceInUseExclusive,
                                             "is being used by another app in exclusive mode."));
@@ -268,6 +270,47 @@ TEST_CASE("Audio that cannot start says which device and why", "[app][controller
     ctx.audio()->restart(); // the failure was one-off
     CHECK(ctx.audio()->running());
     CHECK_FALSE(ctx.notifications()->contains(QStringLiteral("engine")));
+}
+
+TEST_CASE("A virtual microphone that cannot be kept exclusive still works and says why",
+          "[app][controller]") {
+    TestApp t;
+    auto& ctx = t.context();
+    const QString key = QStringLiteral("virtual-mic-shared");
+    const auto exclusive = [&ctx] {
+        return ctx.engine()
+            .activeDevices()
+            .virtualMic.value_or(vox::devices::StreamInfo{})
+            .exclusive;
+    };
+#if defined(Q_OS_WIN)
+    CHECK(exclusive());
+    t.backend().refuseExclusive("cable", vox::makeError(vox::ErrorCode::DeviceInUseExclusive,
+                                                        "cannot be opened in exclusive mode."));
+    ctx.audio()->restart();
+    CHECK(ctx.audio()->running());
+    CHECK_FALSE(exclusive());
+    REQUIRE(ctx.notifications()->contains(key));
+    CHECK(ctx.notifications()->messageFor(key).contains(QStringLiteral("CABLE Input")));
+
+    t.backend().allowExclusive("cable");
+    ctx.audio()->restart();
+    CHECK(exclusive());
+    CHECK_FALSE(ctx.notifications()->contains(key));
+
+    ctx.audio()->setVirtualMicExclusive(false);
+    CHECK_FALSE(exclusive());
+    REQUIRE(ctx.saveNow());
+    QFile file(t.settingsPath());
+    REQUIRE(file.open(QIODevice::ReadOnly));
+    const auto devices =
+        QJsonDocument::fromJson(file.readAll()).object().value("devices").toObject();
+    CHECK_FALSE(devices.value("virtualMicExclusive").toBool(true));
+#else
+    // Only WASAPI holds a device exclusively; elsewhere nothing is asked or reported.
+    CHECK_FALSE(exclusive());
+    CHECK_FALSE(ctx.notifications()->contains(key));
+#endif
 }
 
 TEST_CASE("Toggles reach the engine and the settings file", "[app][controller]") {

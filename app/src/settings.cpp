@@ -54,7 +54,8 @@ QJsonObject toJson(const AppSettings& s) {
                               {"useVirtualMic", s.useVirtualMic},
                               {"virtualMicChosen", s.virtualMicChosen},
                               {"periodFrames", s.periodFrames},
-                              {"exclusive", s.exclusive}};
+                              {"exclusive", s.exclusive},
+                              {"virtualMicExclusive", s.virtualMicExclusive}};
     const QJsonObject input{
         {"hearMyself", s.hearMyself},
         {"voiceEnabled", s.voiceEnabled},
@@ -110,6 +111,7 @@ AppSettings fromJson(const QJsonObject& root) {
     s.virtualMicChosen = devices.value("virtualMicChosen").toBool(false);
     s.periodFrames = devices.value("periodFrames").toInt(d.periodFrames);
     s.exclusive = devices.value("exclusive").toBool(d.exclusive);
+    s.virtualMicExclusive = devices.value("virtualMicExclusive").toBool(d.virtualMicExclusive);
 
     const QJsonObject input = root.value("input").toObject();
     s.hearMyself = input.value("hearMyself").toBool(d.hearMyself);

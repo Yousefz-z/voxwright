@@ -21,6 +21,10 @@ public:
     void setDefault(DeviceKind kind, const std::string& id);
     /// The next open of `deviceId` fails with `error`.
     void failNextOpen(const std::string& deviceId, Error error);
+    /// Every exclusive-mode open of `deviceId` fails with `error` until
+    /// allowExclusive(), as when the device does not allow exclusive use.
+    void refuseExclusive(const std::string& deviceId, Error error);
+    void allowExclusive(const std::string& deviceId);
 
     [[nodiscard]] std::string name() const override { return "Fake"; }
     [[nodiscard]] Result<std::vector<DeviceInfo>> enumerate(DeviceKind kind) override;
@@ -68,6 +72,7 @@ private:
     mutable std::mutex mutex_;
     std::vector<DeviceInfo> devices_;
     std::map<std::string, Error> failures_;
+    std::map<std::string, Error> exclusiveRefusals_;
     std::map<std::string, OpenStream*> streams_;
     std::mutex eventMutex_; ///< Held while the event callback runs or is replaced.
     EventCallback callback_;

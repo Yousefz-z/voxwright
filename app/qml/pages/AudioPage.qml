@@ -320,6 +320,14 @@ Item {
                         }
                     }
                     SwitchRow {
+                        objectName: "virtualMicExclusive"
+                        visible: Qt.platform.os === "windows"
+                        label: qsTr("Keep my voice out of screen shares")
+                        detail: qsTr("Only Voxwright can play into the virtual microphone, so apps that share your screen with sound, such as Discord, cannot send your voice twice. Hear myself and sounds in your headphones can still be shared.")
+                        checked: page.audio.virtualMicExclusive
+                        onToggled: on => page.audio.virtualMicExclusive = on
+                    }
+                    SwitchRow {
                         visible: Qt.platform.os === "windows"
                         label: qsTr("Exclusive mode")
                         detail: qsTr("Bypasses the Windows mixer for about 10 ms less delay. Other apps cannot use the devices meanwhile.")

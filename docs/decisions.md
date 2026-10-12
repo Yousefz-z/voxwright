@@ -437,3 +437,28 @@ headphones to the voice without pausing the microphone would also put
 the live microphone in the user's ears and could howl through speakers.
 Other apps get the speech alone, in the voice, as they do the speech
 that bypasses the voice.
+
+## D44. The virtual microphone is opened exclusively on Windows
+
+*2026-10-12.* Viewers of a Discord screen share heard the voice twice
+whenever Voxwright ran, even with the voice changer off. Screen sharing
+with sound captures every app except Discord through Windows process
+loopback, which is not tied to an output device: Voxwright playing the
+voice into the cable was captured too, and reached viewers beside the
+voice channel. A process-loopback probe that excluded Discord the way a
+screen share does caught a tone played shared into the cable at
+-15.1 dBFS, and Voxwright's own test sound at -18 dBFS; with the cable
+opened exclusively it caught nothing, while chat apps still received
+the tone at full level. Windows has no option for a shared stream to
+stay out of loopback capture, so the virtual microphone output opens in
+exclusive mode by default ("Keep my voice out of screen shares" on the
+Audio page). Windows gives an exclusive stream priority, so other apps
+playing into the cable are cut off, which keeps stray sounds out of the
+microphone too. If Windows refuses exclusive use (the cable's "Allow
+applications to take exclusive control" is off), the output falls back
+to shared mode and a banner explains how to allow it; if another app
+holds the cable exclusively, audio cannot start, as before. The
+headphones stay shared: hear-myself and sounds played there can still be
+captured, which only the user can avoid. Only Windows: CoreAudio and the
+Linux backends have no exclusive mode for these devices.
+

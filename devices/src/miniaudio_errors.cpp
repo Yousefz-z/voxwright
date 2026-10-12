@@ -18,8 +18,8 @@ Error mapOpenError(ma_result result, DeviceKind kind, const std::string& deviceN
         if (exclusive) {
             return makeError(ErrorCode::DeviceInUseExclusive,
                              device +
-                                 " cannot be opened in exclusive mode. Turn off exclusive mode in "
-                                 "Settings > Advanced, or close the app that holds the device.",
+                                 " cannot be opened in exclusive mode. Turn off exclusive mode on "
+                                 "the Audio page, or close the app that holds the device.",
                              detail);
         }
         return makeError(
