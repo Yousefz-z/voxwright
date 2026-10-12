@@ -33,7 +33,7 @@ public:
     ~WindowsHotkeys() override { stop(); }
 
     [[nodiscard]] Status setBindings(const std::vector<HotkeyBinding>& bindings) override {
-        std::vector<Native> natives;
+        std::vector<KeyMatcher::Binding> natives;
         std::string refused;
         for (const HotkeyBinding& b : bindings) {
             const auto vk = windowsVirtualKey(b.combination);
@@ -45,12 +45,18 @@ public:
             const Qt::KeyboardModifiers m = b.combination.keyboardModifiers();
             natives.push_back({b.id, *vk, m.testFlag(Qt::ControlModifier),
                                m.testFlag(Qt::ShiftModifier), m.testFlag(Qt::AltModifier),
-                               m.testFlag(Qt::MetaModifier), false});
+                               m.testFlag(Qt::MetaModifier)});
         }
         const bool any = !natives.empty();
+        std::vector<int> released;
         {
             const std::scoped_lock lock(mutex_);
-            bindings_ = std::move(natives);
+            released = matcher_.setBindings(natives);
+        }
+        // A held key whose hotkey went away is released now, or push-to-talk
+        // would keep talking.
+        for (const int id : released) {
+            deliver(id, false);
         }
         if (any) {
             if (auto started = ensureStarted(); !started) {
@@ -69,16 +75,6 @@ public:
     [[nodiscard]] bool supported() const override { return true; }
 
 private:
-    struct Native {
-        int id;
-        std::uint32_t vk;
-        bool ctrl;
-        bool shift;
-        bool alt;
-        bool win;
-        bool down;
-    };
-
     Status ensureStarted() {
         if (thread_.joinable()) {
             return {};
@@ -143,37 +139,22 @@ private:
     static bool held(int vk) { return (GetAsyncKeyState(vk) & 0x8000) != 0; }
 
     void onKey(std::uint32_t vk, bool down, bool up) {
-        std::array<std::pair<int, bool>, 8> events{};
+        std::array<KeyMatcher::Event, 8> events{};
         std::size_t count = 0;
         {
-            const bool ctrl = held(VK_CONTROL);
-            const bool shift = held(VK_SHIFT);
-            const bool alt = held(VK_MENU);
-            const bool win = held(VK_LWIN) || held(VK_RWIN);
+            const KeyMatcher::Modifiers modifiers{held(VK_CONTROL), held(VK_SHIFT), held(VK_MENU),
+                                                  held(VK_LWIN) || held(VK_RWIN)};
             const std::scoped_lock lock(mutex_);
-            for (Native& b : bindings_) {
-                if (b.vk != vk || count == events.size()) {
-                    continue;
-                }
-                // Key repeat sends more key-downs: only the first counts.
-                if (down && !b.down && b.ctrl == ctrl && b.shift == shift && b.alt == alt &&
-                    b.win == win) {
-                    b.down = true;
-                    events[count++] = {b.id, true};
-                } else if (up && b.down) {
-                    b.down = false;
-                    events[count++] = {b.id, false};
-                }
-            }
+            count = matcher_.onKey(vk, down, up, modifiers, events);
         }
         for (std::size_t i = 0; i < count; ++i) {
-            deliver(events[i].first, events[i].second);
+            deliver(events[i].id, events[i].pressed);
         }
     }
 
     static inline std::atomic<WindowsHotkeys*> active_{nullptr};
     std::mutex mutex_;
-    std::vector<Native> bindings_;
+    KeyMatcher matcher_;
     std::thread thread_;
     std::atomic<DWORD> threadId_{0};
 };
