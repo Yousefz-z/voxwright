@@ -122,7 +122,8 @@ See [D34](#d34-onnx-runtime-comes-from-microsofts-release-archives) and
 *2026-10-07.* No license file is added; choosing one is the owner's
 decision. Third-party licenses are listed in
 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) and shipped with the
-installers.
+installers. Superseded by [D47](#d47-the-project-is-mit-licensed): the owner
+chose MIT.
 
 ## D15. Naming and style
 
@@ -512,3 +513,13 @@ Neural conversion (RVC and similar) sounds more convincing but needs a
 model trained on a target voice, usually a real person's, and 100 to
 300 ms of delay on a CPU. The ML track (D13, D35) runs a model the user
 supplies; none ships.
+
+## D47. The project is MIT licensed
+
+*2026-10-12.* The owner chose the MIT License for Voxwright's own code, the
+built-in voices, and the sound pack (all original, D1, D11, D24). The text
+is in [LICENSE](../LICENSE) and installed with the app as
+`licenses/Voxwright.txt`, beside the third-party licenses. The libraries in
+the app keep their own licenses: MIT, MIT-0, BSD, and Qt under LGPL-3.0,
+dynamically linked; none of them sets terms for the project's own code.
+Catch2 (BSL-1.0) is used only by the tests and not shipped.
