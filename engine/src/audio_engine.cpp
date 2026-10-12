@@ -115,7 +115,7 @@ public:
                     std::uint32_t channels) noexcept override {
         const double now = engine_.backend_.now();
         if (driving) {
-            engine_.renderForPull(*this, frames, now);
+            engine_.renderForPull(*this, frames);
         }
         stage.pull(interleaved, frames, channels, now);
     }
@@ -329,18 +329,26 @@ void AudioEngine::closeStreams() noexcept {
 
 // ---------------------------------------------------------------- audio threads
 
-void AudioEngine::runGraph(std::span<const float> input, std::size_t frames, double now) noexcept {
+void AudioEngine::runGraph(std::span<const float> input, std::size_t frames,
+                           double& writeTime) noexcept {
     if (frames == 0) {
         return;
     }
     const auto mic = std::span<float>(micOut_).first(frames);
     const auto monitor = std::span<float>(monitorOut_).first(frames);
     graph_.process(input, mic, monitor);
+    // The output stages steer by when the audio lands, after processing:
+    // stamped at the callback start, a write could land after the device
+    // read it was meant for. Every write of one callback keeps the first
+    // one's time (see OutputStage::push).
+    if (writeTime < 0.0) {
+        writeTime = backend_.now();
+    }
     if (virtualMic_) {
-        virtualMic_->stage.push(mic, now);
+        virtualMic_->stage.push(mic, writeTime);
     }
     if (monitor_) {
-        monitor_->stage.push(monitor, now);
+        monitor_->stage.push(monitor, writeTime);
     }
 }
 
@@ -348,7 +356,7 @@ void AudioEngine::processCapture(const float* interleaved, std::size_t frames,
                                  std::uint32_t channels) noexcept {
     const ScopedNoDenormals noDenormals;
     const auto started = std::chrono::steady_clock::now();
-    const double now = backend_.now();
+    double writeTime = -1.0;
     InputPort& port = *input_;
     const std::uint32_t ch = std::max<std::uint32_t>(1, channels);
     const float scale = 1.0F / static_cast<float>(ch);
@@ -366,13 +374,13 @@ void AudioEngine::processCapture(const float* interleaved, std::size_t frames,
         }
         const auto mono = std::span<const float>(port.mono).first(n);
         if (!port.resample) {
-            runGraph(mono, n, now);
+            runGraph(mono, n, writeTime);
             engineFrames += n;
         } else {
             for (std::size_t offset = 0; offset < n;) {
                 const auto counts = port.resampler.process(mono.subspan(offset), engineIn_);
                 runGraph(std::span<const float>(engineIn_).first(counts.produced), counts.produced,
-                         now);
+                         writeTime);
                 engineFrames += counts.produced;
                 offset += counts.consumed;
                 if (counts.consumed == 0 && counts.produced == 0) {
@@ -392,14 +400,15 @@ void AudioEngine::processCapture(const float* interleaved, std::size_t frames,
     }
 }
 
-void AudioEngine::renderForPull(OutputPort& driver, std::size_t frames, double now) noexcept {
+void AudioEngine::renderForPull(OutputPort& driver, std::size_t frames) noexcept {
     const ScopedNoDenormals noDenormals;
     const auto started = std::chrono::steady_clock::now();
+    double writeTime = -1.0;
     const std::size_t want = driver.stage.targetFrames() + frames;
     std::size_t engineFrames = 0;
     // Bounded: each step adds about kPullChunk device frames.
     for (int guard = 0; driver.stage.fill() < want && guard < 256; ++guard) {
-        runGraph({}, kPullChunk, now);
+        runGraph({}, kPullChunk, writeTime);
         engineFrames += kPullChunk;
     }
     if (engineFrames > 0) {

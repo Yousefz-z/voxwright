@@ -137,8 +137,9 @@ private:
     // Audio threads.
     void processCapture(const float* interleaved, std::size_t frames,
                         std::uint32_t channels) noexcept;
-    void renderForPull(OutputPort& driver, std::size_t frames, double now) noexcept;
-    void runGraph(std::span<const float> input, std::size_t frames, double now) noexcept;
+    void renderForPull(OutputPort& driver, std::size_t frames) noexcept;
+    /// `writeTime` < 0 is stamped when the first block is processed.
+    void runGraph(std::span<const float> input, std::size_t frames, double& writeTime) noexcept;
 
     devices::AudioBackend& backend_;
     EngineConfig config_;

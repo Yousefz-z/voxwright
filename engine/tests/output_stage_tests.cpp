@@ -43,6 +43,48 @@ TEST_CASE("Output stage absorbs clock drift without dropouts", "[engine][output]
     }
 }
 
+TEST_CASE("Output stage keeps its margin when processing delays the write",
+          "[engine][output][drift]") {
+    // Measured on Windows 11 (wireless headset, VB-CABLE, 10 ms callbacks):
+    // the cable read 1.8 ms after each microphone callback started, while
+    // the voice took 1 to 3 ms to process. Stamped at the callback start, a
+    // write landed after the read it was meant for, and the voice dropped
+    // out every 2 to 4 s: each refill was drained back to the 2 ms margin.
+    ProcessingSetup slow;
+    slow.processingMs = 2.5;
+    slow.deviceOffsetMs = 1.8;
+    SECTION("Stamped when the write lands, as the engine does, nothing drops out") {
+        slow.stampAtLanding = true;
+        const auto r = simulateDrift(48000.0, 20.0, 60.0, 480, 480, 0.5, slow);
+        INFO("underruns " << r.underruns << ", mean fill " << r.meanFillMs << " ms");
+        CHECK(r.underruns == 0);
+    }
+    SECTION("Stamped at the callback start, the margin widens after the first dropouts") {
+        const auto r = simulateDrift(48000.0, 20.0, 60.0, 480, 480, 0.5, slow);
+        const double snr = toneToNoiseDb(r.lastSecond, 1000.0, 48000.0);
+        INFO("underruns " << r.underruns << ", mean fill " << r.meanFillMs << " ms, SNR " << snr
+                          << " dB");
+        CHECK(r.underruns <= 2);
+        CHECK(r.meanFillMs < 20.0);
+        CHECK(snr > 90.0);
+    }
+}
+
+TEST_CASE("Output stage widens its margin when scheduling jitter exceeds it",
+          "[engine][output][drift]") {
+    // Producer callbacks up to 5 ms late, more than the 2 ms margin covers.
+    // 90 s, so the last second is past the fast acquisition after a refill.
+    for (const double ppm : {-100.0, 0.0, 100.0}) {
+        const auto r = simulateDrift(48000.0, ppm, 90.0, 480, 480, 5.0);
+        const double snr = toneToNoiseDb(r.lastSecond, 1000.0, 48000.0);
+        INFO(ppm << " ppm: underruns " << r.underruns << ", mean fill " << r.meanFillMs
+                 << " ms, SNR " << snr << " dB");
+        CHECK(r.underruns <= 3);
+        CHECK(r.meanFillMs < 20.0);
+        CHECK(snr > 90.0);
+    }
+}
+
 TEST_CASE("Output stage refills after an underrun instead of crackling", "[engine][output]") {
     OutputStage stage;
     stage.prepare(kEngineRate, kEngineRate, 256, 128);
@@ -66,7 +108,10 @@ TEST_CASE("Output stage refills after an underrun instead of crackling", "[engin
         stage.pull(out.data(), 128, 1, 0.0);
     }
     CHECK(stage.underruns() == 1);
-    // One block is not enough to resume: it waits for the full amount again.
+    // The margin widened by its starting value (D45).
+    CHECK(stage.targetFrames() == 512);
+    // One block is not enough to resume: it waits for the full amount again,
+    // now 512 + 128 + 128.
     stage.push(block, 6.0);
     stage.pull(out.data(), 128, 1, 0.0);
     CHECK(vox::testing::peakAbs(out) == 0.0F);
@@ -74,7 +119,33 @@ TEST_CASE("Output stage refills after an underrun instead of crackling", "[engin
         stage.push(block, 7.0 + i);
     }
     stage.pull(out.data(), 128, 1, 0.0);
+    CHECK(vox::testing::peakAbs(out) == 0.0F);
+    for (int i = 0; i < 2; ++i) {
+        stage.push(block, 11.0 + i);
+    }
+    stage.pull(out.data(), 128, 1, 0.0);
     CHECK(vox::testing::peakAbs(out) > 0.4F);
+}
+
+TEST_CASE("Output stage widens its margin at most tenfold", "[engine][output]") {
+    OutputStage stage;
+    stage.prepare(kEngineRate, kEngineRate, 96, 128);
+    std::vector<float> out(128);
+    std::vector<float> block(128, 0.5F);
+    for (int round = 0; round < 15; ++round) {
+        // Fill until it plays, then starve it.
+        for (int i = 0; i < 40 && vox::testing::peakAbs(out) == 0.0F; ++i) {
+            stage.push(block, static_cast<double>(round * 100 + i));
+            stage.pull(out.data(), 128, 1, static_cast<double>(round * 100 + i));
+        }
+        while (stage.fill() > 0) {
+            stage.pull(out.data(), 128, 1, 0.0);
+        }
+        stage.pull(out.data(), 128, 1, 0.0);
+        std::fill(out.begin(), out.end(), 0.0F);
+    }
+    CHECK(stage.underruns() >= 10);
+    CHECK(stage.targetFrames() == 960);
 }
 
 TEST_CASE("Output stage counts overruns when the device stops reading", "[engine][output]") {

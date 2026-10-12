@@ -7,6 +7,8 @@ namespace vox::engine {
 namespace {
 
 constexpr double kMaxTrim = 0.005; // +-0.5 %, far beyond real clock differences
+/// Underruns raise the target at most this many times its starting value.
+constexpr std::size_t kMaxTargetSteps = 10;
 
 /// One operating point of the PI loop on the fill error (in seconds).
 struct LoopGains {
@@ -42,7 +44,9 @@ void OutputStage::prepare(double engineRate, double deviceRate, std::size_t targ
     engineRate_ = engineRate;
     deviceRate_ = deviceRate;
     nominalRatio_ = deviceRate / engineRate;
-    target_ = std::max<std::size_t>(targetFrames, 16);
+    baseTarget_ = std::max<std::size_t>(targetFrames, 16);
+    maxTarget_ = baseTarget_ * kMaxTargetSteps;
+    target_.store(baseTarget_, std::memory_order_relaxed);
     resampler_.prepare(dsp::ResamplerQuality::Medium, nominalRatio_);
     resamplerDelay_ = dsp::measureHoldBack(resampler_);
     const auto maxConverted =
@@ -52,7 +56,7 @@ void OutputStage::prepare(double engineRate, double deviceRate, std::size_t targ
     converted_.assign(maxConverted, 0.0F);
     mono_.assign(4096, 0.0F);
     ring_ = std::make_unique<SpscRingBuffer<float>>(
-        std::max<std::size_t>(16 * (target_ + maxConverted), 16384));
+        std::max<std::size_t>(16 * (baseTarget_ + maxConverted), 16384));
     lastPushTime_ = -1.0;
     burstFrames_ = 0;
     lastBurst_.store(0, std::memory_order_relaxed);
@@ -89,7 +93,9 @@ void OutputStage::control(double now) noexcept {
     }
     const double continuousFill =
         static_cast<double>(ring_->availableToRead()) - sincePull * deviceRate_;
-    const double error = (continuousFill - static_cast<double>(target_)) / deviceRate_;
+    const double error =
+        (continuousFill - static_cast<double>(target_.load(std::memory_order_relaxed))) /
+        deviceRate_;
     if (!haveError_) {
         smoothedError_ = error;
         haveError_ = true;
@@ -98,8 +104,16 @@ void OutputStage::control(double now) noexcept {
     const LoopGains& g = controlledSeconds_ < kAcquireSeconds ? kAcquire : kTrack;
     smoothedError_ += std::min(1.0, dt / g.errorSeconds) * (error - smoothedError_);
     // The integral is kept in trim units so switching gains does not bump it.
-    integralTrim_ =
+    // It only integrates while the trim is inside its limits: after a refill
+    // with 10 ms device periods the fill starts up to 20 ms above target, and
+    // an integral wound up while draining that at the limit carried the fill
+    // straight through the target into the next underrun, every 4 s.
+    const double integral =
         std::clamp(integralTrim_ + g.integral * smoothedError_ * dt, -kMaxTrim, kMaxTrim);
+    const double unclamped = 1.0 - g.proportional * smoothedError_ - integral;
+    if (std::abs(unclamped - 1.0) <= kMaxTrim) {
+        integralTrim_ = integral;
+    }
     // Too full: produce fewer device frames per engine frame.
     const double wanted = std::clamp(1.0 - g.proportional * smoothedError_ - integralTrim_,
                                      1.0 - kMaxTrim, 1.0 + kMaxTrim);
@@ -138,8 +152,9 @@ void OutputStage::pull(float* interleaved, std::size_t frames, std::uint32_t cha
     }
     lastPullTime_.store(now, std::memory_order_relaxed);
     if (refilling_.load(std::memory_order_relaxed)) {
-        const std::size_t needed =
-            synchronous_ ? frames : target_ + frames + lastBurst_.load(std::memory_order_relaxed);
+        const std::size_t needed = synchronous_ ? frames
+                                                : target_.load(std::memory_order_relaxed) + frames +
+                                                      lastBurst_.load(std::memory_order_relaxed);
         if (ring_->availableToRead() >= needed) {
             refills_.fetch_add(1, std::memory_order_relaxed);
             refilling_.store(false, std::memory_order_relaxed);
@@ -160,6 +175,14 @@ void OutputStage::pull(float* interleaved, std::size_t frames, std::uint32_t cha
         if (got < n) {
             std::fill(interleaved + (done + got) * ch, interleaved + frames * ch, 0.0F);
             underruns_.fetch_add(1, std::memory_order_relaxed);
+            // The margin was too small for this machine's timing: widen it
+            // before refilling, or the controller drains the refill back
+            // down to the same margin and it happens again (D45).
+            const std::size_t target = target_.load(std::memory_order_relaxed);
+            if (!synchronous_ && target < maxTarget_) {
+                target_.store(std::min(target + baseTarget_, maxTarget_),
+                              std::memory_order_relaxed);
+            }
             refilling_.store(true, std::memory_order_relaxed);
             return;
         }

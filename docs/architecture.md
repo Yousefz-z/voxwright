@@ -131,20 +131,26 @@ setting) into a ring buffer, whose ratio a PI controller trims by up to
   since its last read, from the backend's clock) once per producer
   callback, just before it writes. That quantity does not jump when a
   device read moves past a producer write, so the controller does not
-  chase the beat between the two callback rates.
+  chase the beat between the two callback rates. The write is stamped
+  when it lands, after the graph has run, not when the callback started:
+  a read that falls during processing then counts as before the write
+  (D45).
 * Target: 2 ms at that point, which covers scheduling jitter. Because the
   measurement already accounts for the next device read, no further
   period of buffering is needed.
 * For 20 s after a start or a refill the loop runs fast (0.4 rad/s) to
   find the clock difference; then it tracks slowly (0.1 rad/s) with the
   error and the trim both smoothed, so jitter does not reach the ratio as
-  phase noise. Per-block random ratio noise of +-37 ppm measured 72 dB
+  phase noise. The integral stops while the trim sits at its limit, so
+  draining a refill at full trim does not wind it up (D45). Per-block random ratio noise of +-37 ppm measured 72 dB
   tone-to-noise; the tracking loop holds the ratio within about 10 to
   20 ppm and the output at 97 dB, the converter's own floor at a
   non-unity ratio.
 * At start and after an underrun the stage plays silence until it holds
   the target plus one device period plus the producer's last burst, then
-  resumes; the first reads cannot run dry.
+  resumes; the first reads cannot run dry. Each underrun also raises the
+  target by 2 ms, up to 20 ms, for as long as the devices stay open
+  (D45).
 * In pull mode the driving output renders inside its own callback, so it
   has no drift and no refill margin ("synchronous").
 

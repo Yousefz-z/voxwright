@@ -462,3 +462,25 @@ headphones stay shared: hear-myself and sounds played there can still be
 captured, which only the user can avoid. Only Windows: CoreAudio and the
 Linux backends have no exclusive mode for these devices.
 
+## D45. Output stages widen their margin and stop winding up
+
+*2026-10-12.* On Windows with 10 ms device periods, some sessions dropped
+the voice out for 10 ms every 2 to 4 seconds (2 of 5 measured runs with a
+wireless headset and VB-CABLE, shared mode). Recorded callback times
+replayed through the output stage showed three causes. Writes were
+stamped when the microphone callback started, so a cable read during the
+voice processing (1 to 3 ms) fell before a write the controller counted
+as done. After each refill the fill sat up to 20 ms above the 2 ms
+target, the trim drained it at its limit for seconds, and the integral
+wound up meanwhile and carried the fill straight through the target into
+the next underrun; with the 128-frame blocks the drift tests used,
+refills were too small to show it. And a fixed 2 ms margin is less than
+some machines' scheduling jitter. Now writes are stamped when they land,
+the integral stops while the trim is at its limit, and each underrun
+raises the target by its starting value up to tenfold, until the devices
+are reopened. Replaying ten recorded 20 s sessions with 1 to 3 ms of
+processing gave 33 to 39 underruns before and 0 to 3 after; with only the
+phase between the two callbacks varied and no processing, the old
+controller dropped out 11 to 14 times a minute at 6 of 14 phases, the new
+one at none of those 6. Latency rises by 2 ms only on a machine that has
+dropped out, and the readout shows it.
