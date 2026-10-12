@@ -1,6 +1,7 @@
 # Third-party notices
 
-Voxwright uses the following components. Their license texts are installed
+Voxwright itself is released under the [MIT License](LICENSE). It uses the
+following components. Their license texts are installed
 with the application (`licenses/` folder) and are available from the
 projects' repositories at the pinned commits listed in
 [docs/architecture.md](docs/architecture.md#dependencies).

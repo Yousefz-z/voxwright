@@ -85,5 +85,5 @@ Use the `windows` preset on Windows and the `macos` preset on macOS.
 
 ## License
 
-See [docs/decisions.md](docs/decisions.md#d14-project-license) and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Voxwright is released under the [MIT License](LICENSE). The libraries it uses
+keep their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

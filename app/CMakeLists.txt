@@ -180,6 +180,7 @@ install(FILES
     ${PROJECT_SOURCE_DIR}/licenses/LGPL-3.0-only.txt
     ${PROJECT_SOURCE_DIR}/licenses/GPL-3.0-only.txt
     DESTINATION ${vox_licenses_dir})
+install(FILES ${PROJECT_SOURCE_DIR}/LICENSE DESTINATION ${vox_licenses_dir} RENAME Voxwright.txt)
 # License files of the libraries linked into the program, from vcpkg.
 foreach(port libsamplerate miniaudio nlohmann-json rnnoise signalsmith-linear signalsmith-stretch)
     set(_copyright "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/${port}/copyright")
